@@ -1,11 +1,13 @@
-export interface Company {
+// Represents a physical branch (filial) of the tenant company
+export interface Branch {
   id: string
   name: string
-  sector: string
-  state: string
-  region: string
+  sector: string      // linha de negócio (Varejo, Tecnologia, Logística, Atacado, Serviços)
+  city?: string       // cidade da filial
+  state: string       // UF
+  region: string      // macro-região
   size: 'Pequena' | 'Média' | 'Grande'
-  revenue: number       // R$ mil
+  revenue: number     // R$ mil
   employees: number
   founded: number
 
@@ -29,6 +31,18 @@ export interface Company {
   taxDeltaPercent: number       // variação %
 }
 
+// Backwards-compat alias — will be removed after Sprint 2–3 page rewrites
+export type Company = Branch
+
+// The single tenant (empresa logada)
+export interface Tenant {
+  id: string
+  name: string
+  cnpj: string
+  fiscalYear: string
+  initials: string
+}
+
 export type TabId =
   | 'dashboard'
   | 'pivot'
@@ -38,7 +52,7 @@ export type TabId =
   | 'trends'
   | 'rawdata'
 
-export type DimensionKey = 'sector' | 'state' | 'region' | 'size' | 'decade'
+export type DimensionKey = 'sector' | 'state' | 'region' | 'size' | 'decade' | 'city'
 
 export type MetricKey =
   | 'revenue'
