@@ -1,7 +1,50 @@
-# Analitico KLA — Analytics & Reforma Tributária
+# Analitico KLA
 
-Portal de analytics empresarial com simulação de impactos da Reforma Tributária brasileira.
-Desenvolvido por **Kliente 360**.
+> **Inteligência tributária em tempo real para a carteira de clientes do Kliente 360.**
+
+O Analitico KLA transforma dados empresariais complexos em decisões claras. Com ele, consultores e gestores visualizam o impacto exato da Reforma Tributária sobre cada empresa da carteira — e simulam cenários alternativos em segundos, sem planilhas, sem código.
+
+---
+
+## O Problema que Resolve
+
+A Reforma Tributária brasileira (PEC 45/2019) é a maior mudança fiscal em décadas. CBS substitui PIS e COFINS. IBS substitui ICMS e ISS. A transição vai de 2026 a 2033. Para cada empresa, o impacto é diferente — depende do setor, do estado, da composição de receita.
+
+Gestores precisam de respostas rápidas:
+- **Minha carteira vai pagar mais ou menos imposto?**
+- **Quais setores são mais afetados?**
+- **Se a alíquota do IBS for X%, qual o impacto por empresa?**
+
+O Analitico KLA responde a todas essas perguntas com gráficos, tabelas e simulações interativas — em uma única tela.
+
+---
+
+## O que o Portal Oferece
+
+**Dashboard executivo** — visão consolidada da carteira: receita total, carga tributária atual, impacto projetado da reforma e composição de impostos por tipo. Tudo em KPIs e gráficos de leitura imediata.
+
+**Simulação de cenários** — sliders interativos para CBS, IBS-Bens e IBS-Serviços. Cada ajuste recalcula o impacto em tempo real para todas as empresas da carteira, com comparativo setor a setor.
+
+**Tabela Dinâmica** — análise multidimensional com dimensões e métricas configuráveis pelo próprio usuário. Cruze setor × região, estado × porte, ou qualquer combinação — sem precisar pedir ao time de TI.
+
+**Análise por Setor** — composição de impostos, alíquota efetiva e impacto da reforma detalhados para cada setor da economia. Ideal para briefings com clientes de segmentos específicos.
+
+**Análise Regional** — mapa de receita e carga tributária por estado e região, com destaque para as diferenças de ICMS entre Sudeste, Sul e Nordeste.
+
+**Tendências 2021–2033** — projeção da carga tributária ao longo da transição, com marcos do calendário oficial da reforma. Visualize onde cada setor estará em 2033.
+
+**Dados Brutos** — acesso completo à base de empresas com busca, filtros, colunas configuráveis e exportação para CSV. Pronto para uso em relatórios externos.
+
+---
+
+## Para Quem Foi Feito
+
+| Perfil | Como usa |
+|--------|----------|
+| **Consultor tributário** | Simula cenários para apresentar ao cliente em reunião |
+| **Gerente de carteira** | Identifica empresas com maior exposição à reforma |
+| **Diretor financeiro** | Monitora impacto consolidado e projeta carga futura |
+| **Analista** | Explora dados brutos e exporta para relatórios personalizados |
 
 ---
 
@@ -14,138 +57,14 @@ Desenvolvido por **Kliente 360**.
 
 ---
 
-## Stack
-
-| Camada | Tecnologia |
-|--------|-----------|
-| UI | React 18 + TypeScript (strict) |
-| Build | Vite 5 com code splitting por aba |
-| Estilo | Tailwind CSS — identidade Kliente 360 (#009900) |
-| Gráficos | Recharts 2 (Bar, Pie, Area, Line, Scatter, Treemap) |
-| Estado | Zustand (auth) |
-| Export | Papa Parse (CSV com BOM UTF-8) |
-| Deploy | Netlify (branch `main`) |
-
----
-
-## Funcionalidades Atuais
-
-| Aba | O que faz |
-|-----|-----------|
-| **Dashboard** | KPIs globais, receita por setor, composição de impostos, variação % por setor, distribuição por porte |
-| **Tabela Dinâmica** | Pivot table com linha/coluna/métrica configuráveis; vista card no mobile, tabela completa no desktop |
-| **Simulação** | Sliders CBS / IBS-Bens / IBS-Serviços com impacto em tempo real por setor e empresa |
-| **Por Setor** | Receita, atual vs reforma, composição stacked, scatter alíquota × receita, resumo por setor |
-| **Regional** | Treemap por estado, impostos por região, carga por estado, tabela detalhada |
-| **Tendências** | Projeção 2021–2033 com marcos da transição, comparativo 2025 vs 2033 por setor |
-| **Dados Brutos** | Tabela completa com busca, filtros, colunas configuráveis, ordenação, exportação CSV |
-
----
-
-## Arquitetura
-
-```
-src/
-├── components/
-│   ├── ChartTooltip.tsx   # Tooltip unificado para todos os gráficos
-│   ├── ErrorBoundary.tsx  # Captura erros por aba sem derrubar o app
-│   ├── KpiCard.tsx        # Card de KPI reutilizável
-│   ├── Layout.tsx         # Header, navegação por abas, lazy loading
-│   └── RangeSlider.tsx    # Slider de alíquota com label e valor
-├── constants/
-│   └── index.ts           # Cores, limiares, setores de serviço
-├── data/
-│   └── mockData.ts        # 35 empresas · 10 setores · 12 estados
-├── hooks/
-│   ├── usePivotTable.ts   # Lógica completa de pivot (agregar, totalizar)
-│   └── useTableFilter.ts  # Filtro reutilizável (setor, estado, porte, busca)
-├── pages/                 # 7 abas (lazy loaded individualmente)
-├── store/
-│   └── authStore.ts       # Zustand — login/logout em memória
-├── types/
-│   └── index.ts           # Company, TabId, DimensionKey, MetricKey
-└── utils/
-    └── formatters.ts      # fmtM, fmtPct, fmtNum, fmtVal
-```
-
-**Padrões adotados:**
-- Cada aba é um chunk separado (lazy + Suspense) — carregamento sob demanda
-- Dados em R$ mil como unidade base; `fmtM()` converte para exibição K/M/B
-- `useTableFilter` aceita `FilterState` e é reutilizado em 4 páginas
-- ErrorBoundary por aba — erro em uma aba não afeta as demais
-
----
-
-## Dados Simulados
-
-- **35 empresas** em 10 setores e 12 estados (SP, RJ, MG, RS, PR, SC, BA, CE, PE, GO, DF, AM)
-- Alíquotas efetivas médias por setor para regime atual (IRPJ, CSLL, PIS, COFINS, ISS, ICMS)
-- Reforma modelada conforme PEC 45/2019: CBS substitui PIS+COFINS; IBS substitui ICMS+ISS
-- Cronograma de transição 2026–2033 com fases configuradas em `TRANSITION` no mockData
-- Projeção de crescimento de 5% a.a. para dados de tendência
-
----
-
-## Desenvolvimento
+## Desenvolvimento Local
 
 ```bash
 npm install
 npm run dev     # http://localhost:5173
-npm run build   # TypeScript + Vite — build de produção
+npm run build   # build de produção
 ```
 
 ---
 
-## Análise de Qualidade — Estado Atual
-
-### Pontos Fortes
-- Arquitetura limpa com separação de responsabilidades (hooks, utils, constants, components)
-- TypeScript strict sem erros de compilação
-- Code splitting garante carregamento rápido da aba inicial (~12KB)
-- Responsividade: mobile usa vista card na Tabela Dinâmica; grids adaptativos em todas as abas
-- Recharts com `ResponsiveContainer` — gráficos se adaptam ao container
-
-### Limitações Conhecidas
-- **Autenticação em memória**: credenciais hardcoded no cliente, sem sessão persistente
-- **Dados estáticos**: sem conexão a API ou banco de dados real
-- **Sem testes**: ausência de testes unitários e de integração
-- **Sem i18n**: apenas português; estrutura não preparada para múltiplos idiomas
-- **Recharts bundle**: 587KB minificado (164KB gzip) — maior custo de performance
-
----
-
-## Roadmap
-
-### Fase 1 — Autenticação Real *(próxima sprint)*
-- [ ] Substituir authStore por integração com Supabase Auth (ou Auth0)
-- [ ] Sessão persistente via JWT / cookie seguro
-- [ ] Controle de acesso por perfil (admin vs viewer)
-- [ ] Tela de recuperação de senha
-
-### Fase 2 — Dados Reais *(MVP com cliente)*
-- [ ] Camada de serviço `src/services/` com abstração sobre fonte de dados
-- [ ] Integração com API REST ou Supabase para carregar empresas
-- [ ] Upload de arquivo CSV/Excel pelo usuário (substituir ou complementar dados)
-- [ ] Cache de dados com SWR ou React Query
-- [ ] Indicadores de carregamento por seção (skeleton loaders)
-
-### Fase 3 — Funcionalidades Analíticas *(pós MVP)*
-- [ ] Filtro de data / período (para dados históricos reais)
-- [ ] Comparação entre dois cenários simultaneamente na Simulação
-- [ ] Exportação PDF do dashboard (React PDF ou html2canvas)
-- [ ] Favoritar/salvar configurações de pivot table por usuário
-- [ ] Alertas configuráveis (ex.: "notificar se impacto > X%")
-
-### Fase 4 — Performance e Qualidade *(paralelo ao Fase 3)*
-- [ ] Testes unitários com Vitest (hooks, formatters, usePivotTable)
-- [ ] Testes de componente com Testing Library
-- [ ] Virtualização de tabelas longas (react-virtual) para >500 linhas
-- [ ] Substituir Recharts por alternativa menor se bundle for crítico (e.g. Victory, Nivo)
-- [ ] CI/CD: GitHub Actions com build + lint obrigatório para merge em main
-
-### Fase 5 — Produto *(escala)*
-- [ ] Multi-tenant: cada cliente vê apenas suas empresas
-- [ ] Dashboard customizável (drag & drop de widgets)
-- [ ] Notificações push para variações tributárias relevantes
-- [ ] API pública para integração com ERPs (SAP, TOTVS, Omie)
-- [ ] Modo de comparação entre empresas do mesmo setor (benchmarking)
+*Desenvolvido por **Kliente 360** · Dados simulados para fins de demonstração*
