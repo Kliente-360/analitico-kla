@@ -1,40 +1,50 @@
-import { useState } from 'react'
-import { LogOut, BarChart3, Table2, FlaskConical, PieChart, MapPin, TrendingUp, Database } from 'lucide-react'
+import { lazy, Suspense, useState } from 'react'
+import { LogOut, BarChart3, Table2, FlaskConical, PieChart, MapPin, TrendingUp, Database, Loader2 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import { ErrorBoundary } from './ErrorBoundary'
 import type { TabId } from '../types'
-import DashboardPage    from '../pages/DashboardPage'
-import PivotTablePage   from '../pages/PivotTablePage'
-import ScenarioPage     from '../pages/ScenarioPage'
-import SectorPage       from '../pages/SectorPage'
-import RegionalPage     from '../pages/RegionalPage'
-import TrendPage        from '../pages/TrendPage'
-import RawDataPage      from '../pages/RawDataPage'
+
+// Code-split: cada aba é carregada sob demanda
+const DashboardPage  = lazy(() => import('../pages/DashboardPage'))
+const PivotTablePage = lazy(() => import('../pages/PivotTablePage'))
+const ScenarioPage   = lazy(() => import('../pages/ScenarioPage'))
+const SectorPage     = lazy(() => import('../pages/SectorPage'))
+const RegionalPage   = lazy(() => import('../pages/RegionalPage'))
+const TrendPage      = lazy(() => import('../pages/TrendPage'))
+const RawDataPage    = lazy(() => import('../pages/RawDataPage'))
+
+const PAGES: Record<TabId, React.LazyExoticComponent<() => React.ReactElement>> = {
+  dashboard: DashboardPage,
+  pivot:     PivotTablePage,
+  scenario:  ScenarioPage,
+  sector:    SectorPage,
+  regional:  RegionalPage,
+  trends:    TrendPage,
+  rawdata:   RawDataPage,
+}
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: 'dashboard', label: 'Dashboard',        icon: <BarChart3 size={15} /> },
-  { id: 'pivot',     label: 'Tabela Dinâmica',  icon: <Table2 size={15} /> },
-  { id: 'scenario',  label: 'Simulação',        icon: <FlaskConical size={15} /> },
-  { id: 'sector',    label: 'Por Setor',        icon: <PieChart size={15} /> },
-  { id: 'regional',  label: 'Regional',         icon: <MapPin size={15} /> },
-  { id: 'trends',    label: 'Tendências',       icon: <TrendingUp size={15} /> },
-  { id: 'rawdata',   label: 'Dados Brutos',     icon: <Database size={15} /> },
+  { id: 'dashboard', label: 'Dashboard',       icon: <BarChart3 size={15} /> },
+  { id: 'pivot',     label: 'Tabela Dinâmica', icon: <Table2 size={15} /> },
+  { id: 'scenario',  label: 'Simulação',       icon: <FlaskConical size={15} /> },
+  { id: 'sector',    label: 'Por Setor',       icon: <PieChart size={15} /> },
+  { id: 'regional',  label: 'Regional',        icon: <MapPin size={15} /> },
+  { id: 'trends',    label: 'Tendências',      icon: <TrendingUp size={15} /> },
+  { id: 'rawdata',   label: 'Dados Brutos',    icon: <Database size={15} /> },
 ]
 
-function renderPage(tab: TabId) {
-  switch (tab) {
-    case 'dashboard': return <DashboardPage />
-    case 'pivot':     return <PivotTablePage />
-    case 'scenario':  return <ScenarioPage />
-    case 'sector':    return <SectorPage />
-    case 'regional':  return <RegionalPage />
-    case 'trends':    return <TrendPage />
-    case 'rawdata':   return <RawDataPage />
-  }
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[400px] text-primary-700">
+      <Loader2 size={32} className="animate-spin" />
+    </div>
+  )
 }
 
 export default function Layout() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
   const { user, logout } = useAuthStore()
+  const Page = PAGES[activeTab]
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -89,8 +99,12 @@ export default function Layout() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 max-w-screen-2xl w-full mx-auto px-6 py-6">
-        {renderPage(activeTab)}
+      <main className="flex-1 max-w-screen-2xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Page />
+          </Suspense>
+        </ErrorBoundary>
       </main>
 
       <footer className="text-center text-xs text-gray-400 py-4 border-t border-gray-100 bg-white">

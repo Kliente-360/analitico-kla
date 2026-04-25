@@ -2,14 +2,9 @@ import { useState, useMemo } from 'react'
 import { Download, Search, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import Papa from 'papaparse'
 import { companies, SECTORS, STATES, SIZES } from '../data/mockData'
+import { fmtM, fmtPct } from '../utils/formatters'
+import { useTableFilter } from '../hooks/useTableFilter'
 import type { Company } from '../types'
-
-const fmtM = (v: number) => {
-  if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}B`
-  if (Math.abs(v) >= 1_000)     return `${(v / 1_000).toFixed(1)}M`
-  return `${v.toFixed(0)}K`
-}
-const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`
 
 interface ColDef {
   key: keyof Company
@@ -19,63 +14,59 @@ interface ColDef {
 }
 
 const COLUMNS: ColDef[] = [
-  { key: 'name',                  label: 'Empresa',              align: 'left'  },
-  { key: 'sector',                label: 'Setor',                align: 'left'  },
-  { key: 'state',                 label: 'UF',                   align: 'left'  },
-  { key: 'region',                label: 'Região',               align: 'left'  },
-  { key: 'size',                  label: 'Porte',                align: 'left'  },
-  { key: 'founded',               label: 'Fundação',             align: 'right', fmt: (v) => String(v) },
-  { key: 'employees',             label: 'Funcionários',         align: 'right', fmt: (v) => Number(v).toLocaleString('pt-BR') },
-  { key: 'revenue',               label: 'Receita',              align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'irpj',                  label: 'IRPJ',                 align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'csll',                  label: 'CSLL',                 align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'pis',                   label: 'PIS',                  align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'cofins',                label: 'COFINS',               align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'iss',                   label: 'ISS',                  align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'icms',                  label: 'ICMS',                 align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'totalTaxCurrent',       label: 'Total Atual',          align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'effectiveRateCurrent',  label: 'Alíq. Atual',         align: 'right', fmt: (v) => `${Number(v).toFixed(1)}%` },
-  { key: 'cbs',                   label: 'CBS',                  align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'ibs',                   label: 'IBS',                  align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'totalTaxReform',        label: 'Total Reforma',        align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'effectiveRateReform',   label: 'Alíq. Reforma',       align: 'right', fmt: (v) => `${Number(v).toFixed(1)}%` },
-  { key: 'taxDelta',              label: 'Δ R$',                 align: 'right', fmt: (v) => `R$ ${fmtM(Number(v) * 1000)}` },
-  { key: 'taxDeltaPercent',       label: 'Δ %',                  align: 'right', fmt: (v) => fmtPct(Number(v)) },
+  { key: 'name',                 label: 'Empresa',           align: 'left'  },
+  { key: 'sector',               label: 'Setor',             align: 'left'  },
+  { key: 'state',                label: 'UF',                align: 'left'  },
+  { key: 'region',               label: 'Região',            align: 'left'  },
+  { key: 'size',                 label: 'Porte',             align: 'left'  },
+  { key: 'founded',              label: 'Fundação',          align: 'right', fmt: (v) => String(v) },
+  { key: 'employees',            label: 'Funcionários',      align: 'right', fmt: (v) => Number(v).toLocaleString('pt-BR') },
+  { key: 'revenue',              label: 'Receita',           align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'irpj',                 label: 'IRPJ',              align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'csll',                 label: 'CSLL',              align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'pis',                  label: 'PIS',               align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'cofins',               label: 'COFINS',            align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'iss',                  label: 'ISS',               align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'icms',                 label: 'ICMS',              align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'totalTaxCurrent',      label: 'Total Atual',       align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'effectiveRateCurrent', label: 'Alíq. Atual',      align: 'right', fmt: (v) => `${Number(v).toFixed(1)}%` },
+  { key: 'cbs',                  label: 'CBS',               align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'ibs',                  label: 'IBS',               align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'totalTaxReform',       label: 'Total Reforma',     align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'effectiveRateReform',  label: 'Alíq. Reforma',    align: 'right', fmt: (v) => `${Number(v).toFixed(1)}%` },
+  { key: 'taxDelta',             label: 'Δ R$',              align: 'right', fmt: (v) => fmtM(Number(v)) },
+  { key: 'taxDeltaPercent',      label: 'Δ %',               align: 'right', fmt: (v) => fmtPct(Number(v)) },
 ]
 
 type SortKey = keyof Company
 
+interface Filters { sector: string; state: string; size: string; search: string }
+
 export default function RawDataPage() {
-  const [search, setSearch]           = useState('')
-  const [sectorFilter, setSector]     = useState('Todos')
-  const [stateFilter,  setState_]     = useState('Todos')
-  const [sizeFilter,   setSize]       = useState('Todos')
-  const [sortKey,      setSortKey]    = useState<SortKey>('name')
-  const [sortDir,      setSortDir]    = useState<'asc' | 'desc'>('asc')
-  const [visibleCols, setVisibleCols] = useState<Set<keyof Company>>(
-    new Set(COLUMNS.map((c) => c.key)),
-  )
+  const [filters, setFilters] = useState<Filters>({ sector: 'Todos', state: 'Todos', size: 'Todos', search: '' })
+  const [sortKey, setSortKey] = useState<SortKey>('name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [visibleCols, setVisibleCols] = useState<Set<keyof Company>>(new Set(COLUMNS.map((c) => c.key)))
   const [showColPicker, setShowColPicker] = useState(false)
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase()
-    return companies.filter(
-      (c) =>
-        (sectorFilter === 'Todos' || c.sector === sectorFilter) &&
-        (stateFilter  === 'Todos' || c.state  === stateFilter)  &&
-        (sizeFilter   === 'Todos' || c.size   === sizeFilter)   &&
-        (q === '' || c.name.toLowerCase().includes(q) || c.sector.toLowerCase().includes(q) || c.state.toLowerCase().includes(q)),
-    )
-  }, [search, sectorFilter, stateFilter, sizeFilter])
+  const setFilter = (k: keyof Filters) => (v: string) => setFilters((prev) => ({ ...prev, [k]: v }))
 
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
+  const filtered = useTableFilter(companies, {
+    sector: filters.sector,
+    state:  filters.state,
+    size:   filters.size,
+    search: filters.search,
+  })
+
+  const sorted = useMemo(() =>
+    [...filtered].sort((a, b) => {
       const av = a[sortKey]
       const bv = b[sortKey]
       const cmp = typeof av === 'number' ? av - (bv as number) : String(av).localeCompare(String(bv))
       return sortDir === 'asc' ? cmp : -cmp
-    })
-  }, [filtered, sortKey, sortDir])
+    }),
+    [filtered, sortKey, sortDir],
+  )
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -85,14 +76,12 @@ export default function RawDataPage() {
   const exportCsv = () => {
     const rows = sorted.map((c) => {
       const obj: Record<string, string | number> = {}
-      COLUMNS.forEach((col) => {
-        obj[col.label] = c[col.key] as string | number
-      })
+      COLUMNS.forEach((col) => { obj[col.label] = c[col.key] as string | number })
       return obj
     })
-    const csv = Papa.unparse(rows)
+    const csv  = Papa.unparse(rows)
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
+    const url  = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = `analitico-kla-dados-${new Date().toISOString().slice(0, 10)}.csv`
@@ -126,18 +115,17 @@ export default function RawDataPage() {
       {/* Controls */}
       <div className="card p-4">
         <div className="flex flex-wrap gap-3 items-end">
-          {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={filters.search}
+              onChange={(e) => setFilter('search')(e.target.value)}
               placeholder="Buscar empresa, setor, estado..."
               className="input-field pl-9 pr-8"
             />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            {filters.search && (
+              <button onClick={() => setFilter('search')('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 <X size={14} />
               </button>
             )}
@@ -145,31 +133,28 @@ export default function RawDataPage() {
 
           <div className="w-44">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Setor</label>
-            <select className="select-field" value={sectorFilter} onChange={(e) => setSector(e.target.value)}>
+            <select className="select-field" value={filters.sector} onChange={(e) => setFilter('sector')(e.target.value)}>
               <option>Todos</option>
               {SECTORS.map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div className="w-32">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Estado</label>
-            <select className="select-field" value={stateFilter} onChange={(e) => setState_(e.target.value)}>
+            <select className="select-field" value={filters.state} onChange={(e) => setFilter('state')(e.target.value)}>
               <option>Todos</option>
               {STATES.map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div className="w-36">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Porte</label>
-            <select className="select-field" value={sizeFilter} onChange={(e) => setSize(e.target.value)}>
+            <select className="select-field" value={filters.size} onChange={(e) => setFilter('size')(e.target.value)}>
               <option>Todos</option>
               {SIZES.map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
 
           <div className="relative">
-            <button
-              onClick={() => setShowColPicker((v) => !v)}
-              className="btn-secondary text-sm"
-            >
+            <button onClick={() => setShowColPicker((v) => !v)} className="btn-secondary text-sm">
               Colunas
             </button>
             {showColPicker && (
@@ -178,12 +163,7 @@ export default function RawDataPage() {
                 <div className="grid grid-cols-2 gap-1 max-h-64 overflow-y-auto">
                   {COLUMNS.map((col) => (
                     <label key={String(col.key)} className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer py-1">
-                      <input
-                        type="checkbox"
-                        checked={visibleCols.has(col.key)}
-                        onChange={() => toggleCol(col.key)}
-                        className="accent-primary-700"
-                      />
+                      <input type="checkbox" checked={visibleCols.has(col.key)} onChange={() => toggleCol(col.key)} className="accent-primary-700" />
                       {col.label}
                     </label>
                   ))}
@@ -227,16 +207,13 @@ export default function RawDataPage() {
               {sorted.map((c, ri) => (
                 <tr key={c.id} className={`${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-primary-50 transition-colors`}>
                   {visibleColDefs.map((col) => {
-                    const raw = c[col.key]
-                    const val = col.fmt ? col.fmt(raw as number | string) : String(raw)
+                    const raw     = c[col.key]
+                    const val     = col.fmt ? col.fmt(raw as number | string) : String(raw)
                     const isDelta = col.key === 'taxDelta' || col.key === 'taxDeltaPercent'
-                    const numRaw = typeof raw === 'number' ? raw : 0
+                    const numRaw  = typeof raw === 'number' ? raw : 0
                     const deltaClass = isDelta ? (numRaw < 0 ? 'text-green-700 font-medium' : numRaw > 0 ? 'text-red-700 font-medium' : '') : ''
                     return (
-                      <td
-                        key={String(col.key)}
-                        className={`px-3 py-2 ${col.align === 'right' ? 'text-right' : ''} ${deltaClass || 'text-gray-700'}`}
-                      >
+                      <td key={String(col.key)} className={`px-3 py-2 ${col.align === 'right' ? 'text-right' : ''} ${deltaClass || 'text-gray-700'}`}>
                         {val}
                       </td>
                     )
@@ -254,11 +231,10 @@ export default function RawDataPage() {
           </table>
         </div>
 
-        {/* Footer summary */}
         <div className="bg-gray-50 border-t border-gray-200 px-4 py-3 flex flex-wrap gap-6 text-xs text-gray-500">
-          <span>Receita total: <strong className="text-gray-700">R$ {fmtM(sorted.reduce((s, c) => s + c.revenue, 0) * 1000)}</strong></span>
-          <span>Impostos atuais: <strong className="text-gray-700">R$ {fmtM(sorted.reduce((s, c) => s + c.totalTaxCurrent, 0) * 1000)}</strong></span>
-          <span>Impostos reforma: <strong className="text-gray-700">R$ {fmtM(sorted.reduce((s, c) => s + c.totalTaxReform, 0) * 1000)}</strong></span>
+          <span>Receita total: <strong className="text-gray-700">{fmtM(sorted.reduce((s, c) => s + c.revenue, 0))}</strong></span>
+          <span>Impostos atuais: <strong className="text-gray-700">{fmtM(sorted.reduce((s, c) => s + c.totalTaxCurrent, 0))}</strong></span>
+          <span>Impostos reforma: <strong className="text-gray-700">{fmtM(sorted.reduce((s, c) => s + c.totalTaxReform, 0))}</strong></span>
           <span>Funcionários: <strong className="text-gray-700">{sorted.reduce((s, c) => s + c.employees, 0).toLocaleString('pt-BR')}</strong></span>
         </div>
       </div>

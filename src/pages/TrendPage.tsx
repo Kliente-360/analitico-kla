@@ -4,12 +4,8 @@ import {
   Legend, ReferenceLine, LineChart, Line,
 } from 'recharts'
 import { getYearlyData, SECTORS } from '../data/mockData'
-
-const fmtM = (v: number) => {
-  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}B`
-  if (Math.abs(v) >= 1_000)     return `R$ ${(v / 1_000).toFixed(0)}M`
-  return `R$ ${v.toFixed(0)}K`
-}
+import { SECTOR_COLORS } from '../constants'
+import { fmtM } from '../utils/formatters'
 
 const PHASES = [
   { year: 2026, label: 'Início Transição', desc: 'CBS vigente; IBS em teste (0.1%)' },
@@ -18,10 +14,26 @@ const PHASES = [
   { year: 2033, label: 'Reforma Completa', desc: 'Extinção total de ICMS/ISS' },
 ]
 
-const SECTOR_COLORS: Record<string, string> = {
-  'Tecnologia':'#009900','Varejo':'#0066cc','Indústria':'#ff6b35',
-  'Agronegócio':'#8b5cf6','Saúde':'#ef4444','Construção Civil':'#f59e0b',
-  'Financeiro':'#06b6d4','Telecomunicações':'#ec4899','Energia':'#10b981','Serviços':'#6366f1',
+type TooltipEntry = { value: number; name: string; color: string; dataKey: string }
+
+function TrendTooltip({ active, payload, label }: {
+  active?: boolean; payload?: TooltipEntry[]; label?: string | number
+}) {
+  if (!active || !payload?.length) return null
+  const phase = PHASES.find((p) => p.year === Number(label))
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-xs max-w-xs">
+      <p className="font-semibold text-gray-700 mb-1">Ano {label}</p>
+      {phase && (
+        <p className="text-primary-700 font-medium mb-2 bg-primary-50 px-2 py-1 rounded">
+          {phase.label}: {phase.desc}
+        </p>
+      )}
+      {payload.map((p, i) => (
+        <p key={i} style={{ color: p.color }}>{p.name}: {fmtM(p.value)}</p>
+      ))}
+    </div>
+  )
 }
 
 export default function TrendPage() {
@@ -30,31 +42,21 @@ export default function TrendPage() {
 
   const yearlyData = useMemo(() => getYearlyData(sectorFilter), [sectorFilter])
 
-  // Multi-sector comparison data (last year and 2033)
   const sectorComparison = useMemo(() =>
     SECTORS.map((s) => {
-      const data = getYearlyData(s)
+      const data  = getYearlyData(s)
       const y2025 = data.find((d) => d.year === 2025)!
       const y2033 = data.find((d) => d.year === 2033)!
       const change = ((y2033.regimeReforma - y2025.regimeAtual) / y2025.regimeAtual) * 100
-      return { sector: s, atual2025: Math.round(y2025.regimeAtual / 1000), reforma2033: Math.round(y2033.regimeReforma / 1000), change }
+      return {
+        sector:     s,
+        atual2025:  y2025.regimeAtual,
+        reforma2033: y2033.regimeReforma,
+        change,
+      }
     }),
-    [],
+    [SECTORS],
   )
-
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string; dataKey: string }[]; label?: string | number }) => {
-    if (!active || !payload) return null
-    const phase = PHASES.find((p) => p.year === Number(label))
-    return (
-      <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-xs max-w-xs">
-        <p className="font-semibold text-gray-700 mb-1">Ano {label}</p>
-        {phase && <p className="text-primary-700 font-medium mb-2 bg-primary-50 px-2 py-1 rounded">{phase.label}: {phase.desc}</p>}
-        {payload.map((p, i) => (
-          <p key={i} style={{ color: p.color }}>{p.name}: {fmtM(p.value * 1000)}</p>
-        ))}
-      </div>
-    )
-  }
 
   const ChartComp = view === 'area' ? AreaChart : LineChart
 
@@ -114,7 +116,7 @@ export default function TrendPage() {
         <ResponsiveContainer width="100%" height={300}>
           <ChartComp data={yearlyData} margin={{ left: 10, right: 20 }}>
             <defs>
-              <linearGradient id="gradAtual"   x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="gradAtual" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%"  stopColor="#6b7280" stopOpacity={0.25} />
                 <stop offset="95%" stopColor="#6b7280" stopOpacity={0.02} />
               </linearGradient>
@@ -129,22 +131,22 @@ export default function TrendPage() {
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
             <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}M`} />
-            <Tooltip content={<CustomTooltip />} />
+            <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1_000).toFixed(0)}M`} />
+            <Tooltip content={<TrendTooltip />} />
             <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
             <ReferenceLine x={2026} stroke="#009900" strokeDasharray="4 4" label={{ value: '▶ Início', position: 'top', fontSize: 9, fill: '#009900' }} />
             <ReferenceLine x={2033} stroke="#009900" strokeDasharray="4 4" label={{ value: '✓ Plena', position: 'top', fontSize: 9, fill: '#009900' }} />
             {view === 'area' ? (
               <>
-                <Area type="monotone" dataKey="regimeAtual"   name="Regime Atual (projeção)"   stroke="#6b7280" fill="url(#gradAtual)"    strokeWidth={1.5} strokeDasharray="5 5" />
-                <Area type="monotone" dataKey="regimeReforma" name="Regime Reforma (projeção)"  stroke="#009900" fill="url(#gradReforma)"  strokeWidth={1.5} strokeDasharray="5 5" />
-                <Area type="monotone" dataKey="transicao"     name="Projeção Real (transição)"  stroke="#0066cc" fill="url(#gradTransicao)" strokeWidth={2.5} />
+                <Area type="monotone" dataKey="regimeAtual"   name="Regime Atual (projeção)"  stroke="#6b7280" fill="url(#gradAtual)"     strokeWidth={1.5} strokeDasharray="5 5" />
+                <Area type="monotone" dataKey="regimeReforma" name="Regime Reforma (projeção)" stroke="#009900" fill="url(#gradReforma)"   strokeWidth={1.5} strokeDasharray="5 5" />
+                <Area type="monotone" dataKey="transicao"     name="Projeção Real (transição)" stroke="#0066cc" fill="url(#gradTransicao)" strokeWidth={2.5} />
               </>
             ) : (
               <>
-                <Line type="monotone" dataKey="regimeAtual"   name="Regime Atual (projeção)"   stroke="#6b7280" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
-                <Line type="monotone" dataKey="regimeReforma" name="Regime Reforma (projeção)"  stroke="#009900" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
-                <Line type="monotone" dataKey="transicao"     name="Projeção Real (transição)"  stroke="#0066cc" strokeWidth={2.5} dot={{ r: 3, fill: '#0066cc' }} />
+                <Line type="monotone" dataKey="regimeAtual"   name="Regime Atual (projeção)"  stroke="#6b7280" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                <Line type="monotone" dataKey="regimeReforma" name="Regime Reforma (projeção)" stroke="#009900" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                <Line type="monotone" dataKey="transicao"     name="Projeção Real (transição)" stroke="#0066cc" strokeWidth={2.5} dot={{ r: 3, fill: '#0066cc' }} />
               </>
             )}
           </ChartComp>
@@ -153,7 +155,7 @@ export default function TrendPage() {
 
       {/* Sector comparison 2025 vs 2033 */}
       <div className="card p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Impacto por Setor: 2025 → 2033 (R$ M · Impostos Totais)</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Impacto por Setor: 2025 → 2033 (Impostos Totais)</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -174,8 +176,8 @@ export default function TrendPage() {
                       {s.sector}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-right text-gray-700">{fmtM(s.atual2025 * 1000)}</td>
-                  <td className="py-2.5 px-3 text-right text-gray-700">{fmtM(s.reforma2033 * 1000)}</td>
+                  <td className="py-2.5 px-3 text-right text-gray-700">{fmtM(s.atual2025)}</td>
+                  <td className="py-2.5 px-3 text-right text-gray-700">{fmtM(s.reforma2033)}</td>
                   <td className="py-2.5 px-3 text-right">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${s.change < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                       {s.change >= 0 ? '+' : ''}{s.change.toFixed(1)}%

@@ -1,6 +1,7 @@
 import type { Company, YearlyPoint } from '../types'
+import { SIZE_THRESHOLDS, GROWTH_RATE } from '../constants'
 
-const STATE_REGION: Record<string, string> = {
+export const STATE_REGION: Record<string, string> = {
   SP: 'Sudeste', RJ: 'Sudeste', MG: 'Sudeste', ES: 'Sudeste',
   RS: 'Sul',     PR: 'Sul',     SC: 'Sul',
   BA: 'Nordeste', CE: 'Nordeste', PE: 'Nordeste', MA: 'Nordeste',
@@ -10,11 +11,11 @@ const STATE_REGION: Record<string, string> = {
 
 interface Rates {
   irpj: number; csll: number; pis: number; cofins: number
-  iss: number;  icms: number
-  cbs: number;  ibs: number;   is_rate: number
+  iss:  number; icms: number
+  cbs:  number; ibs:  number; is_rate: number
 }
 
-// Alíquotas efetivas médias por setor — regime atual e reforma
+// Alíquotas efetivas médias por setor — regime atual e pós-reforma
 const SECTOR_RATES: Record<string, Rates> = {
   'Tecnologia':       { irpj:.025, csll:.010, pis:.0165, cofins:.0760, iss:.030, icms:.000, cbs:.088, ibs:.035, is_rate:0 },
   'Varejo':           { irpj:.020, csll:.009, pis:.0165, cofins:.0760, iss:.000, icms:.150, cbs:.088, ibs:.130, is_rate:0 },
@@ -32,9 +33,11 @@ function mk(
   id: string, name: string, sector: string, state: string,
   revenue: number, employees: number, founded: number,
 ): Company {
-  const r = SECTOR_RATES[sector]
+  const r      = SECTOR_RATES[sector]
   const region = STATE_REGION[state]
-  const size: Company['size'] = revenue < 30_000 ? 'Pequena' : revenue < 300_000 ? 'Média' : 'Grande'
+  const size: Company['size'] =
+    revenue < SIZE_THRESHOLDS.SMALL  ? 'Pequena' :
+    revenue < SIZE_THRESHOLDS.MEDIUM ? 'Média'   : 'Grande'
 
   const irpj   = Math.round(revenue * r.irpj)
   const csll   = Math.round(revenue * r.csll)
@@ -42,15 +45,15 @@ function mk(
   const cofins = Math.round(revenue * r.cofins)
   const iss    = Math.round(revenue * r.iss)
   const icms   = Math.round(revenue * r.icms)
-  const totalTaxCurrent = irpj + csll + pis + cofins + iss + icms
+  const totalTaxCurrent    = irpj + csll + pis + cofins + iss + icms
   const effectiveRateCurrent = (totalTaxCurrent / revenue) * 100
 
   const cbs    = Math.round(revenue * r.cbs)
   const ibs    = Math.round(revenue * r.ibs)
   const isTax  = Math.round(revenue * r.is_rate)
-  const totalTaxReform = irpj + csll + cbs + ibs + isTax
+  const totalTaxReform     = irpj + csll + cbs + ibs + isTax
   const effectiveRateReform = (totalTaxReform / revenue) * 100
-  const taxDelta = totalTaxReform - totalTaxCurrent
+  const taxDelta        = totalTaxReform - totalTaxCurrent
   const taxDeltaPercent = (taxDelta / totalTaxCurrent) * 100
 
   return {
@@ -99,7 +102,7 @@ export const companies: Company[] = [
   mk('35', 'Clínica Saúde Família',  'Saúde',            'MG', 15_000,    120,  2005),
 ]
 
-// Cronograma de transição da reforma (2026–2033)
+// Cronograma de transição da reforma (proporção do novo regime, 0 → 1)
 const TRANSITION: Record<number, number> = {
   2021: 0, 2022: 0, 2023: 0, 2024: 0, 2025: 0,
   2026: 0.10, 2027: 0.20, 2028: 0.35, 2029: 0.50,
@@ -114,10 +117,10 @@ export function getYearlyData(sectorFilter?: string): YearlyPoint[] {
 
   return Object.entries(TRANSITION).map(([yrStr, t]) => {
     const year = parseInt(yrStr)
-    const g = Math.pow(1.05, year - 2025) // 5% crescimento anual
+    const g    = Math.pow(1 + GROWTH_RATE, year - 2025)
 
     const old_ = filtered.reduce((s, c) => s + c.totalTaxCurrent * g, 0)
-    const new_ = filtered.reduce((s, c) => s + c.totalTaxReform * g, 0)
+    const new_ = filtered.reduce((s, c) => s + c.totalTaxReform  * g, 0)
 
     return {
       year,
@@ -128,7 +131,7 @@ export function getYearlyData(sectorFilter?: string): YearlyPoint[] {
   })
 }
 
-export const SECTORS  = [...new Set(companies.map((c) => c.sector))].sort()
-export const STATES   = [...new Set(companies.map((c) => c.state))].sort()
-export const REGIONS  = [...new Set(companies.map((c) => c.region))].sort()
+export const SECTORS = [...new Set(companies.map((c) => c.sector))].sort()
+export const STATES  = [...new Set(companies.map((c) => c.state))].sort()
+export const REGIONS = [...new Set(companies.map((c) => c.region))].sort()
 export const SIZES: Company['size'][] = ['Pequena', 'Média', 'Grande']
