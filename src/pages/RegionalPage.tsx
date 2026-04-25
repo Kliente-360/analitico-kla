@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, Treemap, Cell,
@@ -8,6 +8,8 @@ import { REGION_COLORS } from '../constants'
 import { fmtM } from '../utils/formatters'
 import { ChartTooltip } from '../components/ChartTooltip'
 import { useTableFilter } from '../hooks/useTableFilter'
+import { SkeletonChart, SkeletonControls } from '../components/Skeleton'
+import { usePageReady } from '../hooks/usePageReady'
 
 function CustomTreemapContent(props: {
   x?: number; y?: number; width?: number; height?: number
@@ -29,10 +31,14 @@ function CustomTreemapContent(props: {
 }
 
 export default function RegionalPage() {
+  const ready = usePageReady()
   const [sectorFilter, setSectorFilter] = useState('Todos')
   const [sizeFilter,   setSizeFilter]   = useState('Todos')
 
   const filtered = useTableFilter(companies, { sector: sectorFilter, size: sizeFilter })
+
+  const handleSectorFilter = useCallback((v: string) => setSectorFilter(v), [])
+  const handleSizeFilter   = useCallback((v: string) => setSizeFilter(v),   [])
 
   const stateData = useMemo(() => {
     const states = [...new Set(filtered.map((c) => c.state))].sort()
@@ -75,6 +81,18 @@ export default function RegionalPage() {
     [stateData],
   )
 
+  if (!ready) return (
+    <div className="space-y-5">
+      <div className="h-6 w-40 bg-gray-200 rounded animate-pulse mb-1" />
+      <SkeletonControls />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <SkeletonChart height={250} />
+        <SkeletonChart height={220} />
+      </div>
+      <SkeletonChart height={220} />
+    </div>
+  )
+
   return (
     <div className="space-y-5">
       <div>
@@ -87,14 +105,14 @@ export default function RegionalPage() {
         <div className="flex flex-wrap gap-4">
           <div className="w-48">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Setor</label>
-            <select className="select-field" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
+            <select className="select-field" value={sectorFilter} onChange={(e) => handleSectorFilter(e.target.value)}>
               <option>Todos</option>
               {SECTORS.map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div className="w-48">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Porte</label>
-            <select className="select-field" value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value)}>
+            <select className="select-field" value={sizeFilter} onChange={(e) => handleSizeFilter(e.target.value)}>
               <option>Todos</option>
               {SIZES.map((s) => <option key={s}>{s}</option>)}
             </select>

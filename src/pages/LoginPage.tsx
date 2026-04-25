@@ -42,8 +42,9 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+            <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -51,13 +52,15 @@ export default function LoginPage() {
               placeholder="seu@email.com"
               required
               autoComplete="email"
+              aria-label="E-mail"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
             <div className="relative">
               <input
+                id="login-password"
                 type={showPwd ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -65,10 +68,12 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 required
                 autoComplete="current-password"
+                aria-label="Senha"
               />
               <button
                 type="button"
                 onClick={() => setShowPwd((v) => !v)}
+                aria-label={showPwd ? 'Ocultar senha' : 'Mostrar senha'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -77,7 +82,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg border border-red-200">
+            <div role="alert" className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg border border-red-200">
               {error}
             </div>
           )}

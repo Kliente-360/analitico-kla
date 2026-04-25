@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, ScatterChart, Scatter, ZAxis, Cell,
@@ -8,6 +8,8 @@ import { CHART_COLORS } from '../constants'
 import { fmtM } from '../utils/formatters'
 import { ChartTooltip } from '../components/ChartTooltip'
 import { useTableFilter } from '../hooks/useTableFilter'
+import { SkeletonChart, SkeletonControls } from '../components/Skeleton'
+import { usePageReady } from '../hooks/usePageReady'
 
 interface SectorStat {
   name: string; full: string; color: string
@@ -16,11 +18,111 @@ interface SectorStat {
   delta: number; empresas: number; efetiva: number
 }
 
+function PeerBenchmark({ filtered }: { filtered: typeof companies }) {
+  const [selectedId, setSelectedId] = useState(filtered[0]?.id ?? '')
+  const company = filtered.find((c) => c.id === selectedId) ?? filtered[0]
+
+  // Update selected when filter changes
+  useEffect(() => {
+    if (!filtered.find((c) => c.id === selectedId)) {
+      setSelectedId(filtered[0]?.id ?? '')
+    }
+  }, [filtered, selectedId])
+
+  if (!company || filtered.length < 2) return null
+
+  const peers = filtered.filter((c) => c.sector === company.sector)
+  if (peers.length < 2) return null
+
+  const avg = (fn: (c: typeof company) => number) => peers.reduce((s, c) => s + fn(c), 0) / peers.length
+  const pct = (val: number, fn: (c: typeof company) => number, lower = true) => {
+    const vals = peers.map(fn).sort((a, b) => a - b)
+    const rank = vals.filter((v) => v <= val).length
+    const p = Math.round((rank / peers.length) * 100)
+    return lower ? p : 100 - p
+  }
+
+  const metrics = [
+    { label: 'Receita',            val: company.revenue,              avg: avg((c) => c.revenue),              fmt: fmtM,  lowerBetter: false },
+    { label: 'Alíq. Atual (%)',    val: company.effectiveRateCurrent, avg: avg((c) => c.effectiveRateCurrent), fmt: (v: number) => `${v.toFixed(1)}%`, lowerBetter: true },
+    { label: 'Alíq. Reforma (%)',  val: company.effectiveRateReform,  avg: avg((c) => c.effectiveRateReform),  fmt: (v: number) => `${v.toFixed(1)}%`, lowerBetter: true },
+    { label: 'Impacto (%)',        val: company.taxDeltaPercent,      avg: avg((c) => c.taxDeltaPercent),      fmt: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, lowerBetter: true },
+    { label: 'IRPJ',               val: company.irpj,                 avg: avg((c) => c.irpj),                 fmt: fmtM,  lowerBetter: true },
+    { label: 'Total Atual',        val: company.totalTaxCurrent,      avg: avg((c) => c.totalTaxCurrent),      fmt: fmtM,  lowerBetter: true },
+  ]
+
+  return (
+    <div className="card p-5">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <h3 className="text-sm font-semibold text-gray-700">Benchmarking de Empresa vs Setor</h3>
+        <select
+          className="select-field w-auto text-sm"
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+        >
+          {filtered.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.sector})</option>)}
+        </select>
+      </div>
+      <p className="text-xs text-gray-400 mb-4">
+        Comparando <strong>{company.name}</strong> com {peers.length} empresas do setor <strong>{company.sector}</strong>
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-xs text-gray-500 border-b border-gray-200">
+              <th className="text-left py-2 px-3 font-semibold">Métrica</th>
+              <th className="text-right py-2 px-3 font-semibold">{company.name}</th>
+              <th className="text-right py-2 px-3 font-semibold">Média do Setor</th>
+              <th className="text-right py-2 px-3 font-semibold">vs Média</th>
+              <th className="text-center py-2 px-3 font-semibold">Percentil</th>
+            </tr>
+          </thead>
+          <tbody>
+            {metrics.map((m, i) => {
+              const diff = m.val - m.avg
+              const diffPct = m.avg !== 0 ? (diff / Math.abs(m.avg)) * 100 : 0
+              const percentile = pct(m.val, (_c) => m.val, m.lowerBetter)
+              const isBetter = m.lowerBetter ? diff < 0 : diff > 0
+              return (
+                <tr key={m.label} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="py-2.5 px-3 font-medium text-gray-700">{m.label}</td>
+                  <td className="py-2.5 px-3 text-right font-semibold text-gray-800">{m.fmt(m.val)}</td>
+                  <td className="py-2.5 px-3 text-right text-gray-500">{m.fmt(m.avg)}</td>
+                  <td className="py-2.5 px-3 text-right">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${isBetter ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {diff >= 0 ? '+' : ''}{diffPct.toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-3 text-center">
+                    <div className="inline-flex flex-col items-center gap-0.5">
+                      <span className="text-xs text-gray-500">Top {percentile}%</span>
+                      <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${isBetter ? 'bg-green-500' : 'bg-red-400'}`}
+                          style={{ width: `${Math.min(100, percentile)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function SectorPage() {
+  const ready = usePageReady()
   const [regionFilter, setRegionFilter] = useState('Todos')
   const [sizeFilter,   setSizeFilter]   = useState('Todos')
 
   const filtered = useTableFilter(companies, { region: regionFilter, size: sizeFilter })
+
+  const handleRegionFilter = useCallback((v: string) => setRegionFilter(v), [])
+  const handleSizeFilter   = useCallback((v: string) => setSizeFilter(v),   [])
 
   const sectorStats = useMemo((): SectorStat[] =>
     SECTORS.map((s, i) => {
@@ -60,6 +162,22 @@ export default function SectorPage() {
     [filtered],
   )
 
+  if (!ready) return (
+    <div className="space-y-5">
+      <div className="h-6 w-40 bg-gray-200 rounded animate-pulse mb-1" />
+      <SkeletonControls />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <SkeletonChart height={240} />
+        <SkeletonChart height={240} />
+      </div>
+      <SkeletonChart height={220} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <SkeletonChart height={240} />
+        <SkeletonChart height={240} />
+      </div>
+    </div>
+  )
+
   return (
     <div className="space-y-5">
       <div>
@@ -72,14 +190,14 @@ export default function SectorPage() {
         <div className="flex flex-wrap gap-3 sm:gap-4 items-end">
           <div className="w-48">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Região</label>
-            <select className="select-field" value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)}>
+            <select className="select-field" value={regionFilter} onChange={(e) => handleRegionFilter(e.target.value)}>
               <option>Todos</option>
               {REGIONS.map((r) => <option key={r}>{r}</option>)}
             </select>
           </div>
           <div className="w-48">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Porte</label>
-            <select className="select-field" value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value)}>
+            <select className="select-field" value={sizeFilter} onChange={(e) => handleSizeFilter(e.target.value)}>
               <option>Todos</option>
               {SIZES.map((s) => <option key={s}>{s}</option>)}
             </select>
@@ -206,6 +324,9 @@ export default function SectorPage() {
           </div>
         </div>
       </div>
+
+      {/* Peer Benchmarking */}
+      <PeerBenchmark filtered={filtered} />
     </div>
   )
 }

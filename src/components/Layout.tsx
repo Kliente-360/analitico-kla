@@ -2,7 +2,11 @@ import { lazy, Suspense, useState } from 'react'
 import { LogOut, BarChart3, Table2, FlaskConical, PieChart, MapPin, TrendingUp, Database, Loader2, Printer } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { ErrorBoundary } from './ErrorBoundary'
+import { NotificationBell } from './NotificationBell'
+import { ThemeSwitcher } from './ThemeProvider'
 import type { TabId } from '../types'
+
+const ExportPdfButton = lazy(() => import('./ExportPdfButton').then((m) => ({ default: m.ExportPdfButton })))
 
 // Code-split: cada aba é carregada sob demanda
 const DashboardPage  = lazy(() => import('../pages/DashboardPage'))
@@ -68,13 +72,18 @@ export default function Layout() {
                 <p className="text-sm font-medium text-gray-700">{user?.name}</p>
                 <p className="text-xs text-gray-400">{user?.email}</p>
               </div>
+              <NotificationBell />
+              <ThemeSwitcher />
+              <Suspense fallback={null}>
+                <ExportPdfButton />
+              </Suspense>
               <button
                 onClick={() => window.print()}
                 title="Exportar / Imprimir"
                 className="print:hidden flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-100"
               >
                 <Printer size={15} />
-                <span className="hidden sm:inline">PDF</span>
+                <span className="hidden sm:inline">Imprimir</span>
               </button>
               <button
                 onClick={logout}
@@ -87,11 +96,12 @@ export default function Layout() {
           </div>
 
           {/* Tab navigation */}
-          <nav className="flex gap-0 -mb-px overflow-x-auto">
+          <nav aria-label="Navegação principal" className="flex gap-0 -mb-px overflow-x-auto">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                aria-current={activeTab === tab.id ? 'page' : undefined}
                 className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
                   activeTab === tab.id
                     ? 'border-primary-700 text-primary-700'

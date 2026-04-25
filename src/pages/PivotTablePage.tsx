@@ -4,6 +4,8 @@ import { companies } from '../data/mockData'
 import { usePivotTable } from '../hooks/usePivotTable'
 import { fmtVal } from '../utils/formatters'
 import type { DimensionKey, MetricKey } from '../types'
+import { SkeletonPivotPage } from '../components/Skeleton'
+import { usePageReady } from '../hooks/usePageReady'
 
 const DIMENSIONS: { key: DimensionKey; label: string }[] = [
   { key: 'sector', label: 'Setor' },
@@ -41,6 +43,8 @@ function deltaClass(v: number, metric: MetricKey) {
 }
 
 export default function PivotTablePage() {
+  const ready = usePageReady()
+
   const [rowDim,  setRowDim]  = useState<DimensionKey>('sector')
   const [colDim,  setColDim]  = useState<DimensionKey | 'none'>('region')
   const [metric,  setMetric]  = useState<MetricKey>('totalTaxCurrent')
@@ -59,7 +63,7 @@ export default function PivotTablePage() {
 
   const rowLabel = DIMENSIONS.find((d) => d.key === rowDim)?.label ?? rowDim
 
-  return (
+  return ready ? (
     <div className="space-y-4 sm:space-y-5">
       <div>
         <h2 className="text-lg font-bold text-gray-900">Tabela Dinâmica</h2>
@@ -195,5 +199,5 @@ export default function PivotTablePage() {
         </div>
       </div>
     </div>
-  )
+  ) : <SkeletonPivotPage />
 }

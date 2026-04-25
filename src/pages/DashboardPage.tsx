@@ -1,22 +1,34 @@
+import { useMemo } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LabelList,
 } from 'recharts'
-import { Building2, DollarSign, TrendingDown, TrendingUp } from 'lucide-react'
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext, useSortable, rectSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { Building2, DollarSign, TrendingDown, TrendingUp, GripVertical, RotateCcw } from 'lucide-react'
 import { companies, SECTORS } from '../data/mockData'
 import { CHART_COLORS } from '../constants'
 import { fmtM, fmtPct, fmtNum } from '../utils/formatters'
 import { KpiCard } from '../components/KpiCard'
 import { ChartTooltip } from '../components/ChartTooltip'
+import { SkeletonKpiCard, SkeletonChart } from '../components/Skeleton'
+import { usePageReady } from '../hooks/usePageReady'
+import { useDashboardLayout, type WidgetId } from '../hooks/useDashboardLayout'
 
 const sum = (arr: typeof companies, fn: (c: (typeof companies)[0]) => number) =>
   arr.reduce((s, x) => s + fn(x), 0)
 
-const totalReceita     = sum(companies, (c) => c.revenue)
-const totalAtual       = sum(companies, (c) => c.totalTaxCurrent)
-const totalReforma     = sum(companies, (c) => c.totalTaxReform)
+const totalReceita      = sum(companies, (c) => c.revenue)
+const totalAtual        = sum(companies, (c) => c.totalTaxCurrent)
+const totalReforma      = sum(companies, (c) => c.totalTaxReform)
 const totalFuncionarios = sum(companies, (c) => c.employees)
-const mediaImpacto     = sum(companies, (c) => c.taxDeltaPercent) / companies.length
+const mediaImpacto      = sum(companies, (c) => c.taxDeltaPercent) / companies.length
 
 const sectorData = SECTORS.map((s) => {
   const cs = companies.filter((c) => c.sector === s)
@@ -44,143 +56,247 @@ const sizeData = [
   { name: 'Pequena', value: companies.filter((c) => c.size === 'Pequena').length, color: '#f59e0b' },
 ]
 
-export default function DashboardPage() {
+// Sortable card wrapper
+function SortableCard({ id, children }: { id: WidgetId; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 50 : undefined,
+      }}
+    >
+      <div className="relative group">
+        <button
+          {...attributes}
+          {...listeners}
+          aria-label="Arrastar widget"
+          className="absolute top-2 right-2 p-1 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10 print:hidden"
+        >
+          <GripVertical size={14} />
+        </button>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// Individual widgets
+function KpiSummaryWidget() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <KpiCard label="Total de Empresas" value={String(companies.length)} sub={`${SECTORS.length} setores`} icon={<Building2 size={20} />} accent="green" />
+      <KpiCard label="Receita Total" value={fmtM(totalReceita)} sub="em R$ mil" icon={<DollarSign size={20} />} accent="blue" />
+      <KpiCard label="Impostos — Regime Atual" value={fmtM(totalAtual)} sub={`${((totalAtual / totalReceita) * 100).toFixed(1)}% da receita`} icon={<DollarSign size={20} />} accent="amber" />
+      <KpiCard label="Impostos — Pós-Reforma" value={fmtM(totalReforma)} sub={`${((totalReforma / totalReceita) * 100).toFixed(1)}% da receita`} icon={<DollarSign size={20} />} accent={totalReforma < totalAtual ? 'green' : 'red'} />
+      <KpiCard label="Impacto Médio da Reforma" value={fmtPct(mediaImpacto)} sub={`${fmtNum(totalFuncionarios)} funcionários`} icon={mediaImpacto < 0 ? <TrendingDown size={20} /> : <TrendingUp size={20} />} accent={mediaImpacto < 0 ? 'green' : 'red'} />
+    </div>
+  )
+}
+
+function SectorRevenueWidget() {
+  return (
+    <div className="card p-5">
+      <h3 className="text-sm font-semibold text-gray-700 mb-4">Receita Total por Setor (R$ M)</h3>
+      <ResponsiveContainer width="100%" height={260}>
+        <BarChart data={sectorData} layout="vertical" margin={{ left: 10, right: 30 }}>
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+          <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}M`} />
+          <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
+          <Tooltip content={<ChartTooltip />} />
+          <Bar dataKey="receita" name="Receita" fill="#009900" radius={[0, 4, 4, 0]}>
+            <LabelList dataKey="receita" position="right" formatter={(v: number) => `${v}M`} style={{ fontSize: 10 }} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function TaxCompositionWidget() {
+  return (
+    <div className="card p-5">
+      <h3 className="text-sm font-semibold text-gray-700 mb-4">Composição de Impostos Atuais</h3>
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie data={taxComposition} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={40}>
+            {taxComposition.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+          </Pie>
+          <Tooltip formatter={(v: number) => fmtM(v)} />
+          <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function ReformImpactWidget() {
+  return (
+    <div className="card p-5">
+      <h3 className="text-sm font-semibold text-gray-700 mb-1">Impacto da Reforma Tributária por Setor</h3>
+      <p className="text-xs text-gray-400 mb-4">Comparativo entre carga tributária atual e pós-reforma (R$ M)</p>
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={sectorData} margin={{ left: 10, right: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}M`} />
+          <Tooltip content={<ChartTooltip />} />
+          <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
+          <Bar dataKey="atual"   name="Regime Atual" fill="#0066cc" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="reforma" name="Pós-Reforma"  fill="#009900" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function DeltaPctWidget() {
+  return (
+    <div className="card p-5">
+      <h3 className="text-sm font-semibold text-gray-700 mb-4">Variação % por Setor (Atual → Reforma)</h3>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={sectorData} layout="vertical" margin={{ left: 10, right: 40 }}>
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+          <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+          <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
+          <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, 'Variação']} />
+          <Bar dataKey="delta" name="Variação %" radius={[0, 4, 4, 0]}>
+            {sectorData.map((entry, i) => (
+              <Cell key={i} fill={entry.delta < 0 ? '#009900' : '#ef4444'} />
+            ))}
+            <LabelList dataKey="delta" position="right" formatter={(v: number) => `${v.toFixed(1)}%`} style={{ fontSize: 10 }} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function SizeDistWidget() {
+  return (
+    <div className="card p-5">
+      <h3 className="text-sm font-semibold text-gray-700 mb-4">Distribuição por Porte</h3>
+      <ResponsiveContainer width="100%" height={180}>
+        <PieChart>
+          <Pie data={sizeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={35}
+            label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
+            {sizeData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+          </Pie>
+          <Tooltip />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {sizeData.map((s) => {
+          const cs = companies.filter((c) => c.size === s.name as 'Grande' | 'Média' | 'Pequena')
+          return (
+            <div key={s.name} className="text-center p-3 bg-gray-50 rounded-xl">
+              <p className="text-xs text-gray-500">{s.name}</p>
+              <p className="font-bold" style={{ color: s.color }}>{s.value}</p>
+              <p className="text-xs text-gray-400">{fmtM(sum(cs, (c) => c.revenue))}</p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const WIDGET_COMPONENTS: Record<WidgetId, React.ReactNode> = {
+  'kpi-summary':    <KpiSummaryWidget />,
+  'sector-revenue': <SectorRevenueWidget />,
+  'tax-composition': <TaxCompositionWidget />,
+  'reform-impact':  <ReformImpactWidget />,
+  'delta-pct':      <DeltaPctWidget />,
+  'size-dist':      <SizeDistWidget />,
+}
+
+// Layout hints: some widgets span full width, others are col-span-2 in a 3-col grid
+const WIDGET_SPAN: Record<WidgetId, string> = {
+  'kpi-summary':     'col-span-full',
+  'sector-revenue':  'lg:col-span-2',
+  'tax-composition': 'lg:col-span-1',
+  'reform-impact':   'col-span-full',
+  'delta-pct':       'lg:col-span-1',
+  'size-dist':       'lg:col-span-1',
+}
+
+function SkeletonDashboard() {
   return (
     <div className="space-y-6">
-      {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-        <KpiCard
-          label="Total de Empresas"
-          value={String(companies.length)}
-          sub={`${SECTORS.length} setores`}
-          icon={<Building2 size={20} />}
-          accent="green"
-        />
-        <KpiCard
-          label="Receita Total"
-          value={fmtM(totalReceita)}
-          sub="em R$ mil"
-          icon={<DollarSign size={20} />}
-          accent="blue"
-        />
-        <KpiCard
-          label="Impostos — Regime Atual"
-          value={fmtM(totalAtual)}
-          sub={`${((totalAtual / totalReceita) * 100).toFixed(1)}% da receita`}
-          icon={<DollarSign size={20} />}
-          accent="amber"
-        />
-        <KpiCard
-          label="Impostos — Pós-Reforma"
-          value={fmtM(totalReforma)}
-          sub={`${((totalReforma / totalReceita) * 100).toFixed(1)}% da receita`}
-          icon={<DollarSign size={20} />}
-          accent={totalReforma < totalAtual ? 'green' : 'red'}
-        />
-        <KpiCard
-          label="Impacto Médio da Reforma"
-          value={fmtPct(mediaImpacto)}
-          sub={`${fmtNum(totalFuncionarios)} funcionários`}
-          icon={mediaImpacto < 0 ? <TrendingDown size={20} /> : <TrendingUp size={20} />}
-          accent={mediaImpacto < 0 ? 'green' : 'red'}
-        />
+        {[1,2,3,4,5].map((i) => <SkeletonKpiCard key={i} />)}
       </div>
-
-      {/* Receita por Setor + Composição de Impostos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="card p-5 lg:col-span-2">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Receita Total por Setor (R$ M)</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={sectorData} layout="vertical" margin={{ left: 10, right: 30 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-              <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}M`} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
-              <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="receita" name="Receita" fill="#009900" radius={[0, 4, 4, 0]}>
-                <LabelList dataKey="receita" position="right" formatter={(v: number) => `${v}M`} style={{ fontSize: 10 }} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Composição de Impostos Atuais</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={taxComposition} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={40}>
-                {taxComposition.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-              <Tooltip formatter={(v: number) => fmtM(v)} />
-              <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+        <div className="lg:col-span-2"><SkeletonChart height={260} /></div>
+        <SkeletonChart height={200} />
       </div>
-
-      {/* Impacto da Reforma por Setor */}
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-1">Impacto da Reforma Tributária por Setor</h3>
-        <p className="text-xs text-gray-400 mb-4">Comparativo entre carga tributária atual e pós-reforma (R$ M)</p>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={sectorData} margin={{ left: 10, right: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}M`} />
-            <Tooltip content={<ChartTooltip />} />
-            <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
-            <Bar dataKey="atual"   name="Regime Atual" fill="#0066cc" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="reforma" name="Pós-Reforma"  fill="#009900" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Variação % + Porte */}
+      <SkeletonChart height={240} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Variação % por Setor (Atual → Reforma)</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={sectorData} layout="vertical" margin={{ left: 10, right: 40 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-              <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
-              <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, 'Variação']} />
-              <Bar dataKey="delta" name="Variação %" radius={[0, 4, 4, 0]}>
-                {sectorData.map((entry, i) => (
-                  <Cell key={i} fill={entry.delta < 0 ? '#009900' : '#ef4444'} />
-                ))}
-                <LabelList dataKey="delta" position="right" formatter={(v: number) => `${v.toFixed(1)}%`} style={{ fontSize: 10 }} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <SkeletonChart height={220} />
+        <SkeletonChart height={180} />
+      </div>
+    </div>
+  )
+}
 
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Distribuição por Porte</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie data={sizeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={35}
-                label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
-                {sizeData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {sizeData.map((s) => {
-              const cs = companies.filter((c) => c.size === s.name as 'Grande' | 'Média' | 'Pequena')
-              return (
-                <div key={s.name} className="text-center p-3 bg-gray-50 rounded-xl">
-                  <p className="text-xs text-gray-500">{s.name}</p>
-                  <p className="font-bold" style={{ color: s.color }}>{s.value}</p>
-                  <p className="text-xs text-gray-400">{fmtM(sum(cs, (c) => c.revenue))}</p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+export default function DashboardPage() {
+  const ready = usePageReady()
+  const { order, handleDragEnd, resetOrder } = useDashboardLayout()
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  )
+
+  const onDragEnd = useMemo(() => (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      handleDragEnd(active.id as WidgetId, over.id as WidgetId)
+    }
+  }, [handleDragEnd])
+
+  if (!ready) return <SkeletonDashboard />
+
+  // Group widgets into rows based on their span for layout
+  // kpi-summary: full width (own row)
+  // sector-revenue (2/3) + tax-composition (1/3): same row
+  // reform-impact: full width (own row)
+  // delta-pct (1/2) + size-dist (1/2): same row
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between print:hidden">
+        <p className="text-xs text-gray-400 flex items-center gap-1.5">
+          <GripVertical size={12} />
+          Arraste os widgets para reorganizar o dashboard
+        </p>
+        <button
+          onClick={resetOrder}
+          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          title="Restaurar ordem padrão"
+        >
+          <RotateCcw size={12} />
+          Restaurar padrão
+        </button>
       </div>
 
-      {/* Paleta de referência (oculta — apenas para lint de CHART_COLORS) */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={order} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {order.map((id) => (
+              <div key={id} className={WIDGET_SPAN[id]}>
+                <SortableCard id={id}>
+                  {WIDGET_COMPONENTS[id]}
+                </SortableCard>
+              </div>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      {/* Hidden reference to avoid lint warning on CHART_COLORS */}
       <span className="hidden">{CHART_COLORS[0]}</span>
     </div>
   )

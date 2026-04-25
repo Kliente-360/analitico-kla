@@ -9,6 +9,8 @@ import { fmtM } from '../utils/formatters'
 import { RangeSlider } from '../components/RangeSlider'
 import { ChartTooltip } from '../components/ChartTooltip'
 import { useTableFilter } from '../hooks/useTableFilter'
+import { SkeletonScenarioPage } from '../components/Skeleton'
+import { usePageReady } from '../hooks/usePageReady'
 
 function simTax(
   c: { irpj: number; csll: number; revenue: number; sector: string },
@@ -42,6 +44,8 @@ function SlidersPanel({
 }
 
 export default function ScenarioPage() {
+  const ready = usePageReady()
+
   const [sectorFilter, setSectorFilter] = useState('Todos')
   const [compareMode,  setCompareMode]  = useState(false)
 
@@ -105,7 +109,7 @@ export default function ScenarioPage() {
     </span>
   )
 
-  return (
+  return ready ? (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -251,5 +255,5 @@ export default function ScenarioPage() {
         </div>
       </div>
     </div>
-  )
+  ) : <SkeletonScenarioPage />
 }

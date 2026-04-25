@@ -6,6 +6,8 @@ import {
 import { getYearlyData, SECTORS } from '../data/mockData'
 import { SECTOR_COLORS } from '../constants'
 import { fmtM } from '../utils/formatters'
+import { SkeletonTrendPage } from '../components/Skeleton'
+import { usePageReady } from '../hooks/usePageReady'
 
 const PHASES = [
   { year: 2026, label: 'Início Transição', desc: 'CBS vigente; IBS em teste (0.1%)' },
@@ -37,6 +39,8 @@ function TrendTooltip({ active, payload, label }: {
 }
 
 export default function TrendPage() {
+  const ready = usePageReady()
+
   const [sectorFilter, setSectorFilter] = useState('Todos')
   const [view, setView] = useState<'area' | 'line'>('area')
 
@@ -60,7 +64,7 @@ export default function TrendPage() {
 
   const ChartComp = view === 'area' ? AreaChart : LineChart
 
-  return (
+  return ready ? (
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-bold text-gray-900">Tendências e Projeções</h2>
@@ -198,5 +202,5 @@ export default function TrendPage() {
         </div>
       </div>
     </div>
-  )
+  ) : <SkeletonTrendPage />
 }
