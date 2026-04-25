@@ -23,7 +23,7 @@ export const useThemeStore = create<ThemeState>((set) => ({
   setTheme: (key) => {
     const theme = PRESET_THEMES[key]
     if (!theme) return
-    try { localStorage.setItem('analitico-theme', key) } catch {}
+    try { localStorage.setItem('analitico-theme', key) } catch (_e) { /* storage unavailable */ }
     set({ themeKey: key, theme, customTheme: null })
   },
 

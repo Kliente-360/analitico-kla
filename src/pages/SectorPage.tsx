@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Legend, ScatterChart, Scatter, ZAxis, Cell,
@@ -20,14 +20,9 @@ interface SectorStat {
 
 function PeerBenchmark({ filtered }: { filtered: typeof companies }) {
   const [selectedId, setSelectedId] = useState(filtered[0]?.id ?? '')
-  const company = filtered.find((c) => c.id === selectedId) ?? filtered[0]
-
-  // Update selected when filter changes
-  useEffect(() => {
-    if (!filtered.find((c) => c.id === selectedId)) {
-      setSelectedId(filtered[0]?.id ?? '')
-    }
-  }, [filtered, selectedId])
+  // Derive effective selection — fall back to first when filtered list changes
+  const effectiveId = filtered.find((c) => c.id === selectedId) ? selectedId : (filtered[0]?.id ?? '')
+  const company = filtered.find((c) => c.id === effectiveId) ?? filtered[0]
 
   if (!company || filtered.length < 2) return null
 
@@ -57,7 +52,7 @@ function PeerBenchmark({ filtered }: { filtered: typeof companies }) {
         <h3 className="text-sm font-semibold text-gray-700">Benchmarking de Empresa vs Setor</h3>
         <select
           className="select-field w-auto text-sm"
-          value={selectedId}
+          value={effectiveId}
           onChange={(e) => setSelectedId(e.target.value)}
         >
           {filtered.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.sector})</option>)}

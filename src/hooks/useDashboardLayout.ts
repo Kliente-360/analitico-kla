@@ -42,14 +42,14 @@ export function useDashboardLayout() {
       const oldIndex = prev.indexOf(activeId)
       const newIndex = prev.indexOf(overId)
       const next = arrayMove(prev, oldIndex, newIndex)
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch (_e) { /* storage unavailable */ }
       return next
     })
   }, [])
 
   const resetOrder = useCallback(() => {
     setOrder(DEFAULT_ORDER)
-    try { localStorage.removeItem(STORAGE_KEY) } catch {}
+    try { localStorage.removeItem(STORAGE_KEY) } catch (_e) { /* storage unavailable */ }
   }, [])
 
   return { order, handleDragEnd, resetOrder }
