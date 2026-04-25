@@ -68,7 +68,7 @@ export default function TrendPage() {
       </div>
 
       {/* Controls */}
-      <div className="card p-4">
+      <div className="card p-4 print:hidden">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="w-52">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Setor</label>

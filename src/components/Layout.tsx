@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { LogOut, BarChart3, Table2, FlaskConical, PieChart, MapPin, TrendingUp, Database, Loader2 } from 'lucide-react'
+import { LogOut, BarChart3, Table2, FlaskConical, PieChart, MapPin, TrendingUp, Database, Loader2, Printer } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { TabId } from '../types'
@@ -63,17 +63,25 @@ export default function Layout() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-gray-700">{user?.name}</p>
                 <p className="text-xs text-gray-400">{user?.email}</p>
               </div>
               <button
+                onClick={() => window.print()}
+                title="Exportar / Imprimir"
+                className="print:hidden flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-100"
+              >
+                <Printer size={15} />
+                <span className="hidden sm:inline">PDF</span>
+              </button>
+              <button
                 onClick={logout}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-100"
+                className="print:hidden flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-100"
               >
                 <LogOut size={15} />
-                <span>Sair</span>
+                <span className="hidden sm:inline">Sair</span>
               </button>
             </div>
           </div>

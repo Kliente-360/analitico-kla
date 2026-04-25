@@ -83,7 +83,7 @@ export default function RegionalPage() {
       </div>
 
       {/* Filters */}
-      <div className="card p-4">
+      <div className="card p-4 print:hidden">
         <div className="flex flex-wrap gap-4">
           <div className="w-48">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Setor</label>

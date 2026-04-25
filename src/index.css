@@ -34,3 +34,24 @@
     @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600;
   }
 }
+
+@media print {
+  /* Hide chrome — only content prints */
+  header, footer { display: none !important; }
+  .print\:hidden  { display: none !important; }
+
+  body { background: white; }
+
+  main {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Prevent charts and cards from splitting across pages */
+  .card { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Make content full-width */
+  .lg\:col-span-2, .lg\:grid-cols-3, .lg\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+}

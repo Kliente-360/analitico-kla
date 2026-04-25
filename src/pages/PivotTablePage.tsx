@@ -67,7 +67,7 @@ export default function PivotTablePage() {
       </div>
 
       {/* Controls */}
-      <div className="card p-3 sm:p-4">
+      <div className="card p-3 sm:p-4 print:hidden">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Linhas</label>

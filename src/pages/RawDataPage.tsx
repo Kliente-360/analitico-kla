@@ -113,7 +113,7 @@ export default function RawDataPage() {
       </div>
 
       {/* Controls */}
-      <div className="card p-4">
+      <div className="card p-4 print:hidden">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="relative flex-1 min-w-[200px]">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
