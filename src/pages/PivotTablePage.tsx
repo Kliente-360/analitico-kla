@@ -33,8 +33,8 @@ const METRICS: { key: MetricKey; label: string; fmt: 'money' | 'pct' | 'int' | '
   { key: 'ibs',    label: 'IBS (R$ M)',    fmt: 'money' },
 ]
 
-const AVG_METRICS: MetricKey[] = ['taxDeltaPercent', 'effectiveRateCurrent', 'effectiveRateReform']
 const DELTA_METRICS: MetricKey[] = ['taxDelta', 'taxDeltaPercent']
+const AVG_METRICS:   MetricKey[] = ['taxDeltaPercent', 'effectiveRateCurrent', 'effectiveRateReform']
 
 function heatBg(value: number, max: number, isDelta: boolean): string {
   if (max === 0) return ''
@@ -198,51 +198,23 @@ export default function PivotTablePage() {
             <span className="text-sm text-ink-700">TOTAL</span>
             <span className="text-sm text-primary-700">{fmtVal(grand, metaDef.fmt)}</span>
           </div>
-        ) : (
-          <div className="card p-3">
-            <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-widest mb-1.5">Dimensões</p>
-            <p className="text-sm font-semibold text-ink-900">{rowVals.length} valores</p>
-            <p className="text-xs text-ink-400 mt-0.5">{colVals.length} {hasCol ? 'colunas' : 'coluna'}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile list */}
-      <div className="md:hidden card overflow-hidden">
-        {sortedRows.map((rv, ri) => {
-          const v   = rowTotals[rv] ?? 0
-          const cls = isDelta && v < 0 ? 'text-accent-down' : isDelta && v > 0 ? 'text-accent-up' : 'text-ink-800'
-          return (
-            <div key={rv} className={`flex items-center justify-between px-4 py-3 ${ri > 0 ? 'border-t border-ink-100' : ''} ${ri % 2 === 0 ? '' : 'bg-ink-50'}`}>
-              <span className="text-sm font-medium text-ink-700">{rv}</span>
-              <span className={`text-sm font-semibold ${cls}`}>{fmtVal(v, metaDef.fmt)}</span>
-            </div>
-          )
-        })}
-        <div className="flex items-center justify-between px-4 py-3 bg-ink-100 border-t-2 border-ink-300 font-semibold">
-          <span className="text-sm text-ink-700">TOTAL</span>
-          <span className="text-sm text-primary-700 font-mono">{fmtVal(grand, metaDef.fmt)}</span>
         </div>
       </div>
 
       {/* Full pivot table */}
       <div className="hidden md:block card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs border-collapse">
+          <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="bg-ink-50 border-b border-ink-200">
-                <th className="text-left px-4 py-3 font-semibold text-ink-500 uppercase tracking-wider text-[11px] sticky left-0 bg-ink-50 z-10 min-w-[160px]">
+              <tr className="bg-primary-700 text-white">
+                <th className="text-left px-4 py-3 font-semibold sticky left-0 bg-primary-700 z-10 min-w-[140px]">
                   {rowLabel}
                 </th>
                 {colVals.map((cv) => (
-                  <th key={cv} className="text-right px-4 py-3 font-semibold text-ink-500 uppercase tracking-wider text-[11px] whitespace-nowrap min-w-[110px]">
-                    {cv}
-                  </th>
+                  <th key={cv} className="text-right px-4 py-3 font-semibold whitespace-nowrap min-w-[110px]">{cv}</th>
                 ))}
                 {hasCol && (
-                  <th className="text-right px-4 py-3 font-semibold text-primary-700 uppercase tracking-wider text-[11px] bg-primary-100 min-w-[110px]">
-                    Total
-                  </th>
+                  <th className="text-right px-4 py-3 font-semibold bg-primary-800 min-w-[110px]">Total</th>
                 )}
               </tr>
             </thead>

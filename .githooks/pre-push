@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Pre-push hook: runs the same checks the CI workflow runs
+# (.github/workflows/ci.yml) before allowing a push.
+#
+# Skip with: git push --no-verify (use only when intentional)
+
+set -e
+
+if [[ "${SKIP_PREPUSH:-}" == "1" ]]; then
+  echo "↷ pre-push skipped (SKIP_PREPUSH=1)"
+  exit 0
+fi
+
+echo "▶ pre-push: running CI parity checks"
+
+echo "▶ [1/3] npm run lint"
+npm run lint
+
+echo "▶ [2/3] npm run build"
+npm run build
+
+echo "▶ [3/3] npm run test:coverage"
+npm run test:coverage
+
+echo "✓ pre-push: all CI checks passed"

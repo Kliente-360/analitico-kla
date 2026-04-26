@@ -10,11 +10,6 @@ const COLOR_B = '#d04a3b'
 const DEFAULTS_A = { cbs: 7.5,  ibsBens: 14.0, ibsSvc: 12.0 }
 const DEFAULTS_B = { cbs: 9.0,  ibsBens: 16.0, ibsSvc: 14.0 }
 
-const COLOR_A = '#1f7a5a'   // accent-down — "otimista"
-const COLOR_B = '#d04a3b'   // accent-up  — "conservador"
-const COLOR_REFORM = '#e30613'
-const COLOR_CURRENT = '#8390a3'
-
 function simTax(
   b: { irpj: number; csll: number; revenue: number; sector: string },
   cbs: number, ibsBens: number, ibsSvc: number,
@@ -203,16 +198,13 @@ export default function ScenarioPage() {
           </div>
         ))}
       </div>
-    </div>
-  )
-}
 
       {/* Branch table */}
       <div className="card p-5">
         <h3 className="text-sm font-semibold text-ink-900 mb-1">Impacto simulado por filial</h3>
         <p className="text-xs text-ink-400 mb-4">Verde = redução · Vermelho = aumento · ordenado por Δ A</p>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-ink-500 border-b border-ink-200">
                 <th className="text-left py-2 px-3 font-semibold">Filial</th>
