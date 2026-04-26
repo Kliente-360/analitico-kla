@@ -1,327 +1,236 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Legend, ScatterChart, Scatter, ZAxis, Cell,
+  ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
-import { companies, SECTORS, REGIONS, SIZES } from '../data/mockData'
-import { CHART_COLORS } from '../constants'
+import { branches, BUSINESS_LINES, REGIONS, SIZES } from '../data/mockData'
+import { BUSINESS_LINE_COLORS } from '../constants'
 import { fmtM } from '../utils/formatters'
-import { ChartTooltip } from '../components/ChartTooltip'
-import { useTableFilter } from '../hooks/useTableFilter'
-import { SkeletonChart, SkeletonControls } from '../components/Skeleton'
-import { usePageReady } from '../hooks/usePageReady'
 
-interface SectorStat {
-  name: string; full: string; color: string
-  receita: number; atual: number; reforma: number
-  irpj: number; csll: number; pis: number; cofins: number; iss: number; icms: number
-  delta: number; empresas: number; efetiva: number
-}
-
-function PeerBenchmark({ filtered }: { filtered: typeof companies }) {
-  const [selectedId, setSelectedId] = useState(filtered[0]?.id ?? '')
-  // Derive effective selection — fall back to first when filtered list changes
-  const effectiveId = filtered.find((c) => c.id === selectedId) ? selectedId : (filtered[0]?.id ?? '')
-  const company = filtered.find((c) => c.id === effectiveId) ?? filtered[0]
-
-  if (!company || filtered.length < 2) return null
-
-  const peers = filtered.filter((c) => c.sector === company.sector)
-  if (peers.length < 2) return null
-
-  const avg = (fn: (c: typeof company) => number) => peers.reduce((s, c) => s + fn(c), 0) / peers.length
-  const pct = (val: number, fn: (c: typeof company) => number, lower = true) => {
-    const vals = peers.map(fn).sort((a, b) => a - b)
-    const rank = vals.filter((v) => v <= val).length
-    const p = Math.round((rank / peers.length) * 100)
-    return lower ? p : 100 - p
-  }
-
-  const metrics = [
-    { label: 'Receita',            val: company.revenue,              avg: avg((c) => c.revenue),              fmt: fmtM,  lowerBetter: false },
-    { label: 'Alíq. Atual (%)',    val: company.effectiveRateCurrent, avg: avg((c) => c.effectiveRateCurrent), fmt: (v: number) => `${v.toFixed(1)}%`, lowerBetter: true },
-    { label: 'Alíq. Reforma (%)',  val: company.effectiveRateReform,  avg: avg((c) => c.effectiveRateReform),  fmt: (v: number) => `${v.toFixed(1)}%`, lowerBetter: true },
-    { label: 'Impacto (%)',        val: company.taxDeltaPercent,      avg: avg((c) => c.taxDeltaPercent),      fmt: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, lowerBetter: true },
-    { label: 'IRPJ',               val: company.irpj,                 avg: avg((c) => c.irpj),                 fmt: fmtM,  lowerBetter: true },
-    { label: 'Total Atual',        val: company.totalTaxCurrent,      avg: avg((c) => c.totalTaxCurrent),      fmt: fmtM,  lowerBetter: true },
-  ]
-
-  return (
-    <div className="card p-5">
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <h3 className="text-sm font-semibold text-gray-700">Benchmarking de Empresa vs Setor</h3>
-        <select
-          className="select-field w-auto text-sm"
-          value={effectiveId}
-          onChange={(e) => setSelectedId(e.target.value)}
-        >
-          {filtered.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.sector})</option>)}
-        </select>
-      </div>
-      <p className="text-xs text-gray-400 mb-4">
-        Comparando <strong>{company.name}</strong> com {peers.length} empresas do setor <strong>{company.sector}</strong>
-      </p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-xs text-gray-500 border-b border-gray-200">
-              <th className="text-left py-2 px-3 font-semibold">Métrica</th>
-              <th className="text-right py-2 px-3 font-semibold">{company.name}</th>
-              <th className="text-right py-2 px-3 font-semibold">Média do Setor</th>
-              <th className="text-right py-2 px-3 font-semibold">vs Média</th>
-              <th className="text-center py-2 px-3 font-semibold">Percentil</th>
-            </tr>
-          </thead>
-          <tbody>
-            {metrics.map((m, i) => {
-              const diff = m.val - m.avg
-              const diffPct = m.avg !== 0 ? (diff / Math.abs(m.avg)) * 100 : 0
-              const percentile = pct(m.val, (_c) => m.val, m.lowerBetter)
-              const isBetter = m.lowerBetter ? diff < 0 : diff > 0
-              return (
-                <tr key={m.label} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="py-2.5 px-3 font-medium text-gray-700">{m.label}</td>
-                  <td className="py-2.5 px-3 text-right font-semibold text-gray-800">{m.fmt(m.val)}</td>
-                  <td className="py-2.5 px-3 text-right text-gray-500">{m.fmt(m.avg)}</td>
-                  <td className="py-2.5 px-3 text-right">
-                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${isBetter ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {diff >= 0 ? '+' : ''}{diffPct.toFixed(1)}%
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-center">
-                    <div className="inline-flex flex-col items-center gap-0.5">
-                      <span className="text-xs text-gray-500">Top {percentile}%</span>
-                      <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                        <div
-                          className={`h-1.5 rounded-full ${isBetter ? 'bg-green-500' : 'bg-red-400'}`}
-                          style={{ width: `${Math.min(100, percentile)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
+interface LineStats {
+  name: string; color: string
+  filiais: number; receita: number
+  atual: number; reforma: number; delta: number
+  efetiva: number; efeivaReform: number
 }
 
 export default function SectorPage() {
-  const ready = usePageReady()
   const [regionFilter, setRegionFilter] = useState('Todos')
   const [sizeFilter,   setSizeFilter]   = useState('Todos')
 
-  const filtered = useTableFilter(companies, { region: regionFilter, size: sizeFilter })
+  const filtered = useMemo(() =>
+    branches.filter((b) =>
+      (regionFilter === 'Todos' || b.region === regionFilter) &&
+      (sizeFilter   === 'Todos' || b.size   === sizeFilter)
+    ),
+    [regionFilter, sizeFilter],
+  )
 
-  const handleRegionFilter = useCallback((v: string) => setRegionFilter(v), [])
-  const handleSizeFilter   = useCallback((v: string) => setSizeFilter(v),   [])
-
-  const sectorStats = useMemo((): SectorStat[] =>
-    SECTORS.map((s, i) => {
-      const cs = filtered.filter((c) => c.sector === s)
-      if (cs.length === 0) return null as unknown as SectorStat
-      const rev  = cs.reduce((sum, c) => sum + c.revenue, 0)
-      const cur  = cs.reduce((sum, c) => sum + c.totalTaxCurrent, 0)
-      const ref  = cs.reduce((sum, c) => sum + c.totalTaxReform, 0)
+  const lineStats = useMemo((): LineStats[] =>
+    BUSINESS_LINES.map((line) => {
+      const bs = filtered.filter((b) => b.sector === line)
+      if (bs.length === 0) return null as unknown as LineStats
+      const rev = bs.reduce((s, b) => s + b.revenue, 0)
+      const cur = bs.reduce((s, b) => s + b.totalTaxCurrent, 0)
+      const ref = bs.reduce((s, b) => s + b.totalTaxReform, 0)
       return {
-        name:    s.length > 14 ? s.slice(0, 13) + '…' : s,
-        full:    s,
-        color:   CHART_COLORS[i % CHART_COLORS.length],
-        receita: Math.round(rev / 1_000),
-        atual:   Math.round(cur / 1_000),
-        reforma: Math.round(ref / 1_000),
-        irpj:    Math.round(cs.reduce((sum, c) => sum + c.irpj,   0) / 1_000),
-        csll:    Math.round(cs.reduce((sum, c) => sum + c.csll,   0) / 1_000),
-        pis:     Math.round(cs.reduce((sum, c) => sum + c.pis,    0) / 1_000),
-        cofins:  Math.round(cs.reduce((sum, c) => sum + c.cofins, 0) / 1_000),
-        iss:     Math.round(cs.reduce((sum, c) => sum + c.iss,    0) / 1_000),
-        icms:    Math.round(cs.reduce((sum, c) => sum + c.icms,   0) / 1_000),
-        delta:   cs.reduce((sum, c) => sum + c.taxDeltaPercent, 0) / cs.length,
-        empresas: cs.length,
-        efetiva: (cur / rev) * 100,
+        name:          line,
+        color:         (BUSINESS_LINE_COLORS as Record<string, string>)[line] ?? '#5a6779',
+        filiais:       bs.length,
+        receita:       rev,
+        atual:         cur,
+        reforma:       ref,
+        delta:         cur > 0 ? ((ref - cur) / cur) * 100 : 0,
+        efetiva:       rev > 0 ? (cur / rev) * 100 : 0,
+        efeivaReform:  rev > 0 ? (ref / rev) * 100 : 0,
       }
-    }).filter((s): s is SectorStat => s !== null),
+    }).filter((s): s is LineStats => s !== null)
+      .sort((a, b) => b.atual - a.atual),
     [filtered],
   )
 
   const scatterData = useMemo(() =>
-    filtered.map((c) => ({
-      x: Math.round(c.revenue / 1_000),
-      y: parseFloat(c.effectiveRateCurrent.toFixed(2)),
-      z: c.employees,
-      name: c.name, sector: c.sector,
+    filtered.map((b) => ({
+      x:      Math.round(b.revenue / 1_000),
+      y:      parseFloat(b.effectiveRateCurrent.toFixed(2)),
+      z:      b.employees,
+      name:   b.name,
+      sector: b.sector,
     })),
     [filtered],
   )
 
-  if (!ready) return (
-    <div className="space-y-5">
-      <div className="h-6 w-40 bg-gray-200 rounded animate-pulse mb-1" />
-      <SkeletonControls />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <SkeletonChart height={240} />
-        <SkeletonChart height={240} />
-      </div>
-      <SkeletonChart height={220} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <SkeletonChart height={240} />
-        <SkeletonChart height={240} />
-      </div>
-    </div>
-  )
+  const maxAtual = lineStats[0]?.atual ?? 1
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-bold text-gray-900">Análise por Setor</h2>
-        <p className="text-sm text-gray-500">Compare receita, composição tributária e impacto da reforma por setor.</p>
+        <h2 className="text-lg font-bold text-ink-900">Por Linha de Negócio</h2>
+        <p className="text-sm text-ink-500">Receita, carga tributária e impacto da reforma por segmento.</p>
       </div>
 
       {/* Filters */}
-      <div className="card p-4 print:hidden">
-        <div className="flex flex-wrap gap-3 sm:gap-4 items-end">
+      <div className="card p-3 sm:p-4 print:hidden">
+        <div className="flex flex-wrap gap-3 items-end">
           <div className="w-48">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Região</label>
-            <select className="select-field" value={regionFilter} onChange={(e) => handleRegionFilter(e.target.value)}>
+            <label className="block text-xs font-semibold text-ink-500 uppercase tracking-wide mb-1">Região</label>
+            <select className="select-field" value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)}>
               <option>Todos</option>
               {REGIONS.map((r) => <option key={r}>{r}</option>)}
             </select>
           </div>
           <div className="w-48">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Porte</label>
-            <select className="select-field" value={sizeFilter} onChange={(e) => handleSizeFilter(e.target.value)}>
+            <label className="block text-xs font-semibold text-ink-500 uppercase tracking-wide mb-1">Porte</label>
+            <select className="select-field" value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value)}>
               <option>Todos</option>
               {SIZES.map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
-          <span className="text-sm text-gray-500">{filtered.length} empresas selecionadas</span>
+          <span className="text-xs text-ink-500 pb-1">{filtered.length} filiais selecionadas</span>
         </div>
       </div>
 
-      {/* Receita + Atual vs Reforma */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Receita por Setor (R$ M)</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={sectorStats} layout="vertical" margin={{ left: 10, right: 40 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-              <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}M`} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={110} />
-              <Tooltip formatter={(v: number) => [fmtM(v * 1_000), 'Receita']} />
-              <Bar dataKey="receita" radius={[0, 4, 4, 0]}>
-                {sectorStats.map((s, i) => <Cell key={i} fill={s.color} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      {/* Main: micro-bars + scatter */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5">
 
+        {/* Micro-bars por linha */}
         <div className="card p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Atual vs Pós-Reforma por Setor (R$ M)</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={sectorStats} margin={{ left: 5, right: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}M`} />
-              <Tooltip content={<ChartTooltip />} />
-              <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
-              <Bar dataKey="atual"   name="Regime Atual" fill="#0066cc" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="reforma" name="Pós-Reforma"  fill="#009900" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Composição stacked */}
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Composição de Impostos por Setor — Regime Atual (R$ M)</h3>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={sectorStats} margin={{ left: 5, right: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-            <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-            <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}M`} />
-            <Tooltip content={<ChartTooltip />} />
-            <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
-            <Bar dataKey="icms"   name="ICMS"   fill="#ef4444" stackId="a" />
-            <Bar dataKey="cofins" name="COFINS" fill="#009900" stackId="a" />
-            <Bar dataKey="iss"    name="ISS"    fill="#f59e0b" stackId="a" />
-            <Bar dataKey="irpj"   name="IRPJ"   fill="#0066cc" stackId="a" />
-            <Bar dataKey="csll"   name="CSLL"   fill="#8b5cf6" stackId="a" />
-            <Bar dataKey="pis"    name="PIS"    fill="#06b6d4" stackId="a" radius={[3, 3, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Scatter + Stats table */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Receita (R$ M) × Alíquota Efetiva (%)</h3>
-          <p className="text-xs text-gray-400 mb-4">Tamanho do ponto = número de funcionários</p>
-          <ResponsiveContainer width="100%" height={240}>
-            <ScatterChart margin={{ left: 0, right: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="x" name="Receita" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}M`}
-                label={{ value: 'Receita (R$ M)', position: 'insideBottom', offset: -5, fontSize: 10 }} />
-              <YAxis dataKey="y" name="Alíquota" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
-              <ZAxis dataKey="z" range={[30, 400]} />
-              <Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ payload }) => {
-                if (!payload?.length) return null
-                const d = payload[0].payload
-                return (
-                  <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-xs">
-                    <p className="font-semibold mb-1">{d.name}</p>
-                    <p className="text-gray-500">{d.sector}</p>
-                    <p>Receita: {fmtM(d.x * 1_000)}</p>
-                    <p>Alíquota: {d.y}%</p>
-                    <p>Funcionários: {d.z.toLocaleString('pt-BR')}</p>
+          <h3 className="text-sm font-semibold text-ink-900 mb-1">Carga por linha de negócio</h3>
+          <p className="text-xs text-ink-400 mb-4">Atual (opaco) vs reforma · R$ · ordenado por carga atual</p>
+          <div className="space-y-5">
+            {lineStats.map(({ name, color, atual, reforma, delta, filiais, receita }) => (
+              <div key={name}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-ink-700 flex items-center gap-1.5">
+                    <span className="inline-block w-2 h-2 rounded-sm flex-shrink-0" style={{ background: color }} />
+                    {name}
+                    <span className="text-[11px] text-ink-400 font-normal">
+                      · {filiais} filial{filiais > 1 ? 'is' : ''} · {fmtM(receita)}
+                    </span>
+                  </span>
+                  <span className={`text-[11px] font-semibold font-mono ${delta < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
+                    {delta >= 0 ? '+' : ''}{delta.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="h-2.5 bg-ink-100 rounded overflow-hidden">
+                    <div
+                      className="h-full rounded transition-all"
+                      style={{ width: `${(atual / maxAtual) * 100}%`, background: color, opacity: 0.4 }}
+                    />
                   </div>
-                )
-              }} />
-              <Scatter data={scatterData} fill="#009900" fillOpacity={0.7} />
+                  <div className="h-2.5 bg-ink-100 rounded overflow-hidden">
+                    <div
+                      className="h-full rounded transition-all"
+                      style={{ width: `${(reforma / maxAtual) * 100}%`, background: color }}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-between mt-1 text-[10px] font-mono text-ink-400">
+                  <span>atual {fmtM(atual)}</span>
+                  <span>reforma {fmtM(reforma)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Scatter receita × alíquota */}
+        <div className="card p-5">
+          <h3 className="text-sm font-semibold text-ink-900 mb-1">Receita × Alíquota efetiva</h3>
+          <p className="text-xs text-ink-400 mb-4">Tamanho = nº de colaboradores · cor = segmento</p>
+          <ResponsiveContainer width="100%" height={280}>
+            <ScatterChart margin={{ left: -10, right: 16, bottom: 24 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#eceff5" />
+              <XAxis
+                dataKey="x" name="Receita" type="number" tick={{ fontSize: 10 }}
+                tickFormatter={(v) => `${v}M`}
+                label={{ value: 'Receita (R$ M)', position: 'insideBottom', offset: -12, fontSize: 10, fill: '#8390a3' }}
+              />
+              <YAxis
+                dataKey="y" name="Alíquota" type="number" tick={{ fontSize: 10 }}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <ZAxis dataKey="z" range={[28, 360]} />
+              <Tooltip
+                cursor={{ strokeDasharray: '3 3' }}
+                content={({ payload }) => {
+                  if (!payload?.length) return null
+                  const d = payload[0].payload
+                  const color = (BUSINESS_LINE_COLORS as Record<string, string>)[d.sector] ?? '#5a6779'
+                  return (
+                    <div className="bg-paper border border-ink-200 rounded-lg shadow-md p-3 text-xs">
+                      <p className="font-semibold text-ink-900 mb-1">{d.name}</p>
+                      <p className="text-xs font-medium mb-1.5" style={{ color }}>{d.sector}</p>
+                      <p className="text-ink-600">Receita: {fmtM(d.x * 1_000)}</p>
+                      <p className="text-ink-600">Alíquota: {d.y}%</p>
+                      <p className="text-ink-600">Colaboradores: {d.z.toLocaleString('pt-BR')}</p>
+                    </div>
+                  )
+                }}
+              />
+              {BUSINESS_LINES.map((line) => {
+                const pts   = scatterData.filter((d) => d.sector === line)
+                const color = (BUSINESS_LINE_COLORS as Record<string, string>)[line] ?? '#5a6779'
+                return pts.length > 0 ? (
+                  <Scatter key={line} name={line} data={pts} fill={color} fillOpacity={0.75} />
+                ) : null
+              })}
             </ScatterChart>
           </ResponsiveContainer>
-        </div>
 
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Resumo por Setor</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-gray-500 border-b">
-                  <th className="text-left py-2 font-semibold">Setor</th>
-                  <th className="text-right py-2 font-semibold">Emp.</th>
-                  <th className="text-right py-2 font-semibold">Alíq. Atual</th>
-                  <th className="text-right py-2 font-semibold">Impacto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sectorStats.map((s, i) => (
-                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="py-2 pr-2">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full inline-block flex-shrink-0" style={{ background: s.color }} />
-                        {s.full}
-                      </span>
-                    </td>
-                    <td className="py-2 text-right text-gray-600">{s.empresas}</td>
-                    <td className="py-2 text-right text-gray-600">{s.efetiva.toFixed(1)}%</td>
-                    <td className="py-2 text-right">
-                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${s.delta < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {s.delta >= 0 ? '+' : ''}{s.delta.toFixed(1)}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Legend */}
+          <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+            {BUSINESS_LINES.filter((l) => scatterData.some((d) => d.sector === l)).map((line) => (
+              <span key={line} className="flex items-center gap-1 text-[11px] text-ink-500">
+                <span className="w-2 h-2 rounded-full inline-block" style={{ background: (BUSINESS_LINE_COLORS as Record<string, string>)[line] }} />
+                {line}
+              </span>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Peer Benchmarking */}
-      <PeerBenchmark filtered={filtered} />
+      {/* Summary table */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-ink-900 mb-4">Resumo por linha de negócio</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-ink-500 border-b border-ink-200">
+                <th className="text-left py-2 px-3 font-semibold">Linha</th>
+                <th className="text-right py-2 px-3 font-semibold">Filiais</th>
+                <th className="text-right py-2 px-3 font-semibold">Receita</th>
+                <th className="text-right py-2 px-3 font-semibold">Alíq. atual</th>
+                <th className="text-right py-2 px-3 font-semibold">Alíq. reforma</th>
+                <th className="text-right py-2 px-3 font-semibold">Impacto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lineStats.map((s, i) => (
+                <tr key={s.name} className={i % 2 === 0 ? 'bg-paper' : 'bg-ink-50'}>
+                  <td className="py-2.5 px-3 font-medium text-ink-800">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ background: s.color }} />
+                      {s.name}
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-3 text-right text-ink-600">{s.filiais}</td>
+                  <td className="py-2.5 px-3 text-right text-ink-700 font-mono">{fmtM(s.receita)}</td>
+                  <td className="py-2.5 px-3 text-right text-ink-700 font-mono">{s.efetiva.toFixed(1)}%</td>
+                  <td className="py-2.5 px-3 text-right text-ink-700 font-mono">{s.efeivaReform.toFixed(1)}%</td>
+                  <td className="py-2.5 px-3 text-right">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                      s.delta < 0 ? 'bg-green-50 text-accent-down' : 'bg-red-50 text-accent-up'
+                    }`}>
+                      {s.delta >= 0 ? '+' : ''}{s.delta.toFixed(1)}%
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }
