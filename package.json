@@ -13,8 +13,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write src",
     "test:coverage": "vitest run --coverage",
-    "ci:local": "npm run lint && npm run build && npm run test:coverage",
-    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
+    "test:e2e": "playwright test",
+    "ci:local": "npm run lint && npm run build && npm run test:coverage"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -23,15 +23,18 @@
     "@react-pdf/renderer": "^4.5.1",
     "@tanstack/react-virtual": "^3.13.24",
     "clsx": "^2.1.1",
+    "i18next": "^26.0.8",
     "lucide-react": "^0.411.0",
     "papaparse": "^5.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-i18next": "^17.0.4",
     "recharts": "^2.12.7",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
     "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.59.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/papaparse": "^5.3.14",

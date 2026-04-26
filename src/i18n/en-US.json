@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "dashboard":  "Executive Overview",
+    "pivot":      "Multi-dimensional Analysis",
+    "scenario":   "Scenario Simulation",
+    "sector":     "Business Line",
+    "regional":   "By Branch / State",
+    "trends":     "Trend 2026–2033",
+    "rawdata":    "Raw Data"
+  },
+  "nav_short": {
+    "dashboard":  "Overview",
+    "pivot":      "Pivot",
+    "scenario":   "Simulation",
+    "sector":     "Sector",
+    "regional":   "Regional",
+    "trends":     "Trends",
+    "rawdata":    "Data"
+  },
+  "topbar": {
+    "period":       "Period",
+    "notifications":"Notifications",
+    "dark_mode":    "Dark mode",
+    "light_mode":   "Light mode",
+    "export":       "Export",
+    "logout":       "Log out",
+    "open_menu":    "Open menu",
+    "close_menu":   "Close menu",
+    "more_pages":   "More",
+    "expand_menu":  "Expand menu",
+    "collapse_menu":"Collapse menu"
+  },
+  "cta": {
+    "title":  "Tax questions?",
+    "body":   "Talk to a Kliente 360 consultant."
+  },
+  "skip_link": "Skip to main content",
+  "lang_switch": "Português"
+}

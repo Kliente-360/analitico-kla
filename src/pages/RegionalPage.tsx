@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
+import { useUrlState } from '../hooks/useUrlState'
 import { Treemap, Cell, ResponsiveContainer } from 'recharts'
 import { branches, BUSINESS_LINES, SIZES, STATE_REGION } from '../data/mockData'
 import { REGION_COLORS } from '../constants'
@@ -37,8 +38,8 @@ function TreemapTile(props: {
 }
 
 export default function RegionalPage() {
-  const [sectorFilter, setSectorFilter] = useState('Todos')
-  const [sizeFilter,   setSizeFilter]   = useState('Todos')
+  const [sectorFilter, setSectorFilter] = useUrlState('reg_sector', 'Todos')
+  const [sizeFilter,   setSizeFilter]   = useUrlState('reg_size', 'Todos')
 
   const filtered = useMemo(() =>
     branches.filter((b) =>

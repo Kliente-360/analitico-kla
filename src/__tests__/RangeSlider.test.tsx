@@ -18,12 +18,15 @@ describe('RangeSlider', () => {
     expect(screen.getByText('30%')).toBeInTheDocument()
   })
 
-  it('calls onChange with parsed float on change', () => {
+  it('calls onChange with parsed float after debounce', () => {
+    vi.useFakeTimers()
     const onChange = vi.fn()
     render(<RangeSlider label="CBS" value={8.8} min={0} max={15} step={0.1} onChange={onChange} />)
     const input = screen.getByRole('slider')
     fireEvent.change(input, { target: { value: '10.5' } })
+    vi.advanceTimersByTime(200)
     expect(onChange).toHaveBeenCalledWith(10.5)
+    vi.useRealTimers()
   })
 
   it('respects the step attribute', () => {

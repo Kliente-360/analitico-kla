@@ -1,7 +1,12 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { vi } from 'vitest'
 
 vi.mock('../hooks/usePageReady', () => ({ usePageReady: () => true }))
+
+// Reset URL query params between tests so useUrlState doesn't leak across tests
+afterEach(() => {
+  window.history.replaceState(null, '', window.location.pathname)
+})
 
 // Stub heavy vendor libs that don't work in jsdom
 vi.mock('recharts', () => {
@@ -211,6 +216,128 @@ describe('RawDataPage', () => {
     expect(screen.getByText('Empresa')).toBeInTheDocument()
     expect(screen.getAllByText(/Setor|setor/i).length).toBeGreaterThan(0)
   })
+
+  it('filters by search term and shows count', () => {
+    render(<RawDataPage />)
+    const input = screen.getByPlaceholderText(/Buscar/i)
+    fireEvent.change(input, { target: { value: 'xyznotexist' } })
+    expect(screen.getByText(/0 de/)).toBeInTheDocument()
+  })
+
+  it('shows clear button when searching and clears on click', () => {
+    render(<RawDataPage />)
+    const input = screen.getByPlaceholderText(/Buscar/i)
+    fireEvent.change(input, { target: { value: 'abc' } })
+    const clearBtn = document.querySelector('button svg.lucide-x')?.closest('button')
+    expect(clearBtn).toBeTruthy()
+    if (clearBtn) fireEvent.click(clearBtn)
+    expect((input as HTMLInputElement).value).toBe('')
+  })
+
+  it('filters by sector', () => {
+    render(<RawDataPage />)
+    const selects = screen.getAllByRole('combobox')
+    fireEvent.change(selects[0], { target: { value: 'Varejo' } })
+    expect(screen.getByText(/1 filtro ativo/)).toBeInTheDocument()
+  })
+
+  it('filters by state', () => {
+    render(<RawDataPage />)
+    const selects = screen.getAllByRole('combobox')
+    fireEvent.change(selects[1], { target: { value: 'SP' } })
+    expect(screen.getByText(/1 filtro ativo/)).toBeInTheDocument()
+  })
+
+  it('filters by size', () => {
+    render(<RawDataPage />)
+    const selects = screen.getAllByRole('combobox')
+    fireEvent.change(selects[2], { target: { value: 'Pequena' } })
+    expect(screen.getByText(/filtro/)).toBeInTheDocument()
+  })
+
+  it('shows empty state when no results', () => {
+    render(<RawDataPage />)
+    const input = screen.getByPlaceholderText(/Buscar/i)
+    fireEvent.change(input, { target: { value: 'ZZZ_NOTEXIST_XYZABC' } })
+    expect(screen.getByText('Nenhuma filial encontrada')).toBeInTheDocument()
+  })
+
+  it('shows active filter count with multiple filters', () => {
+    render(<RawDataPage />)
+    const selects = screen.getAllByRole('combobox')
+    fireEvent.change(selects[0], { target: { value: 'Varejo' } })
+    fireEvent.change(selects[1], { target: { value: 'SP' } })
+    expect(screen.getByText(/2 filtros ativos/)).toBeInTheDocument()
+  })
+
+  it('toggles column picker open/close', () => {
+    render(<RawDataPage />)
+    const colBtn = screen.getByText('Colunas')
+    fireEvent.click(colBtn)
+    expect(screen.getByText('Colunas visíveis')).toBeInTheDocument()
+    fireEvent.click(colBtn)
+    expect(screen.queryByText('Colunas visíveis')).not.toBeInTheDocument()
+  })
+
+  it('toggles a column off in column picker', () => {
+    render(<RawDataPage />)
+    fireEvent.click(screen.getByText('Colunas'))
+    const checkboxes = screen.getAllByRole('checkbox')
+    const checked = checkboxes.filter((cb) => (cb as HTMLInputElement).checked)
+    fireEvent.click(checked[0])
+    const picker = screen.getByText('Colunas visíveis').closest('div')
+    expect(picker).toBeInTheDocument()
+  })
+
+  it('renders summary footer with totals', () => {
+    render(<RawDataPage />)
+    expect(screen.getByText(/Receita total/)).toBeInTheDocument()
+    expect(screen.getByText(/Impostos atuais/)).toBeInTheDocument()
+  })
+
+  it('sorts by column on header click', () => {
+    render(<RawDataPage />)
+    const empresaHeader = screen.getByText('Empresa').closest('th')!
+    fireEvent.click(empresaHeader)
+    expect(empresaHeader).toBeInTheDocument()
+  })
+
+  it('toggles sort direction on second column click', () => {
+    render(<RawDataPage />)
+    const empresaHeader = screen.getByText('Empresa').closest('th')!
+    fireEvent.click(empresaHeader)
+    fireEvent.click(empresaHeader)
+    expect(empresaHeader).toBeInTheDocument()
+  })
+
+  it('shows correct column count label after hiding a column', () => {
+    render(<RawDataPage />)
+    fireEvent.click(screen.getByText('Colunas'))
+    const checkboxes = screen.getAllByRole('checkbox')
+    const checked = checkboxes.filter((cb) => (cb as HTMLInputElement).checked)
+    fireEvent.click(checked[0])
+    expect(screen.getByText(/\//)).toBeInTheDocument()
+  })
+
+  it('exports CSV when button clicked', () => {
+    const createObjectURL = vi.fn(() => 'blob:test')
+    const revokeObjectURL = vi.fn()
+    Object.defineProperty(window, 'URL', {
+      value: { createObjectURL, revokeObjectURL },
+      writable: true,
+    })
+    const clickFn = vi.fn()
+    const origCreate = document.createElement.bind(document)
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = origCreate(tag)
+      if (tag === 'a') { vi.spyOn(el as HTMLAnchorElement, 'click').mockImplementation(clickFn) }
+      return el
+    })
+    render(<RawDataPage />)
+    fireEvent.click(screen.getByText('Exportar CSV'))
+    expect(clickFn).toHaveBeenCalled()
+    vi.restoreAllMocks()
+  })
 })
 
 describe('LoginPage', () => {
@@ -236,5 +363,43 @@ describe('LoginPage', () => {
     render(<LoginPage />)
     fireEvent.click(screen.getAllByText(/admin@kliente360.com/)[0])
     expect((screen.getByLabelText('E-mail') as HTMLInputElement).value).toBe('admin@kliente360.com')
+  })
+
+  it('fills second demo credential on click', () => {
+    render(<LoginPage />)
+    fireEvent.click(screen.getAllByText(/demo@kliente360.com/)[0])
+    expect((screen.getByLabelText('E-mail') as HTMLInputElement).value).toBe('demo@kliente360.com')
+  })
+
+  it('shows loading state when form is submitted', () => {
+    vi.useFakeTimers()
+    render(<LoginPage />)
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'admin@kliente360.com' } })
+    fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'admin123' } })
+    act(() => {
+      fireEvent.submit(screen.getByRole('button', { name: /entrar/i }).closest('form')!)
+    })
+    expect(screen.getByText(/Entrando/i)).toBeInTheDocument()
+    act(() => { vi.runAllTimers() })
+    vi.useRealTimers()
+  })
+
+  it('shows error on invalid credentials', () => {
+    vi.useFakeTimers()
+    render(<LoginPage />)
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'wrong@example.com' } })
+    fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'wrongpassword' } })
+    act(() => {
+      fireEvent.submit(screen.getByRole('button', { name: /entrar/i }).closest('form')!)
+    })
+    act(() => { vi.runAllTimers() })
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+    expect(screen.getByText(/inválidos/i)).toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
+  it('renders demo credential tags', () => {
+    render(<LoginPage />)
+    expect(screen.getByText('Credenciais de demonstração')).toBeInTheDocument()
   })
 })
