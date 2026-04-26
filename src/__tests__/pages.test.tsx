@@ -53,19 +53,19 @@ import TrendPage      from '../pages/TrendPage'
 import RawDataPage    from '../pages/RawDataPage'
 
 describe('DashboardPage', () => {
-  it('renders KPI cards', () => {
+  it('renders hero impact section', () => {
     render(<DashboardPage />)
-    expect(screen.getByText('Total de Empresas')).toBeInTheDocument()
+    expect(screen.getByText(/vai pagar/i)).toBeInTheDocument()
   })
 
-  it('renders restore button', () => {
+  it('renders KPI strip with receita label', () => {
     render(<DashboardPage />)
-    expect(screen.getByTitle('Restaurar ordem padrão')).toBeInTheDocument()
+    expect(screen.getByText('Receita total')).toBeInTheDocument()
   })
 
-  it('renders sector revenue widget heading', () => {
+  it('renders business line chart heading', () => {
     render(<DashboardPage />)
-    expect(screen.getByText('Receita Total por Setor (R$ M)')).toBeInTheDocument()
+    expect(screen.getByText('Por linha de negócio')).toBeInTheDocument()
   })
 })
 
@@ -89,12 +89,12 @@ describe('PivotTablePage', () => {
 describe('ScenarioPage', () => {
   it('renders CBS slider', () => {
     render(<ScenarioPage />)
-    expect(screen.getByText(/CBS/)).toBeInTheDocument()
+    expect(screen.getAllByText(/CBS/).length).toBeGreaterThan(0)
   })
 
-  it('renders compare mode toggle', () => {
+  it('renders scenario A card', () => {
     render(<ScenarioPage />)
-    expect(screen.getByText(/Comparar/)).toBeInTheDocument()
+    expect(screen.getByText(/Otimista/i)).toBeInTheDocument()
   })
 })
 

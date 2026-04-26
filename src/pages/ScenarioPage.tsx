@@ -1,253 +1,236 @@
 import { useState, useMemo } from 'react'
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-} from 'recharts'
-import { GitCompare } from 'lucide-react'
-import { companies, SECTORS } from '../data/mockData'
+import { RotateCcw } from 'lucide-react'
+import { branches } from '../data/mockData'
 import { SERVICE_SECTORS } from '../constants'
 import { fmtM } from '../utils/formatters'
 import { RangeSlider } from '../components/RangeSlider'
-import { ChartTooltip } from '../components/ChartTooltip'
-import { useTableFilter } from '../hooks/useTableFilter'
 import { SkeletonScenarioPage } from '../components/Skeleton'
 import { usePageReady } from '../hooks/usePageReady'
+
+const COLOR_A = '#1f7a5a'   // accent-down — "otimista"
+const COLOR_B = '#d04a3b'   // accent-up  — "conservador"
+const COLOR_REFORM = '#e30613'
+const COLOR_CURRENT = '#8390a3'
 
 function simTax(
   c: { irpj: number; csll: number; revenue: number; sector: string },
   cbs: number, ibsBens: number, ibsSvc: number,
-) {
+): number {
   const isSvc = SERVICE_SECTORS.includes(c.sector)
   return c.irpj + c.csll
     + c.revenue * (cbs / 100)
     + c.revenue * ((isSvc ? ibsSvc : ibsBens) / 100)
 }
 
-function SlidersPanel({
-  label, color,
-  cbs, ibs, ibsSvc,
-  onCbs, onIbs, onIbsSvc,
-}: {
-  label: string; color: string
-  cbs: number; ibs: number; ibsSvc: number
-  onCbs: (v: number) => void
-  onIbs: (v: number) => void
-  onIbsSvc: (v: number) => void
-}) {
+interface SliderPanelProps {
+  tag:      string
+  title:    string
+  color:    string
+  cbs:      number; ibsBens: number; ibsSvc: number
+  onCbs:    (v: number) => void
+  onBens:   (v: number) => void
+  onSvc:    (v: number) => void
+  onReset:  () => void
+  total:    number
+  delta:    number
+  accent?:  boolean
+}
+
+function ScenarioPanel({ tag, title, color, cbs, ibsBens, ibsSvc, onCbs, onBens, onSvc, onReset, total, delta, accent }: SliderPanelProps) {
   return (
-    <div className="card p-4 space-y-4">
-      <p className="text-sm font-semibold" style={{ color }}>{label}</p>
-      <RangeSlider label="CBS (substitui PIS + COFINS)" value={cbs}    min={0} max={15} step={0.1} onChange={onCbs}    color={color} />
-      <RangeSlider label="IBS — Bens (substitui ICMS)"  value={ibs}    min={0} max={30} step={0.5} onChange={onIbs}    color={color} />
-      <RangeSlider label="IBS — Serviços (subst. ISS)"  value={ibsSvc} min={0} max={20} step={0.1} onChange={onIbsSvc} color={color} />
+    <div className={`card p-5 space-y-5 ${accent ? 'border-2 border-primary-700' : ''}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span
+            className="text-[10px] font-bold tracking-widest px-2 py-1 rounded text-white"
+            style={{ background: color }}
+          >
+            {tag}
+          </span>
+          <span className="text-sm font-semibold text-ink-900">{title}</span>
+        </div>
+        <button
+          type="button"
+          onClick={onReset}
+          className="text-[11px] text-ink-400 hover:text-ink-700 flex items-center gap-1 transition-colors"
+        >
+          <RotateCcw size={11} /> resetar
+        </button>
+      </div>
+
+      {/* Sliders */}
+      <div className="space-y-4">
+        <RangeSlider label="CBS (substitui PIS + COFINS)" value={cbs}     min={0} max={15} step={0.1} onChange={onCbs}  color={color} />
+        <RangeSlider label="IBS — Bens (substitui ICMS)"  value={ibsBens} min={0} max={30} step={0.5} onChange={onBens} color={color} />
+        <RangeSlider label="IBS — Serviços (subst. ISS)"  value={ibsSvc}  min={0} max={20} step={0.1} onChange={onSvc}  color={color} />
+      </div>
+
+      <hr className="border-ink-100" />
+
+      {/* Result */}
+      <div>
+        <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-widest mb-1.5">Carga total simulada</p>
+        <div className="flex items-baseline gap-2">
+          <span className="font-display text-3xl font-semibold text-ink-900">{fmtM(total)}</span>
+          <span className="text-xs text-ink-400">R$ M</span>
+        </div>
+        <p className={`text-sm font-semibold mt-1 ${delta < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
+          {delta < 0 ? '−' : '+'}{fmtM(Math.abs(delta))}{' '}
+          <span className="text-ink-400 font-normal">vs regime atual</span>
+        </p>
+      </div>
     </div>
   )
 }
 
-export default function ScenarioPage() {
-  const ready = usePageReady()
+function ComparisonBars({ current, reform, simA, simB }: { current: number; reform: number; simA: number; simB: number }) {
+  const items = [
+    { label: 'Atual',          value: current, color: COLOR_CURRENT },
+    { label: 'Reforma oficial', value: reform,  color: COLOR_REFORM  },
+    { label: 'Cenário A',      value: simA,    color: COLOR_A       },
+    { label: 'Cenário B',      value: simB,    color: COLOR_B       },
+  ]
+  const max = Math.max(...items.map((i) => i.value)) * 1.1
 
-  const [sectorFilter, setSectorFilter] = useState('Todos')
-  const [compareMode,  setCompareMode]  = useState(false)
-
-  // Cenário A
-  const [cbsA,    setCbsA]    = useState(8.8)
-  const [ibsA,    setIbsA]    = useState(12.0)
-  const [ibsSvcA, setIbsSvcA] = useState(5.0)
-
-  // Cenário B
-  const [cbsB,    setCbsB]    = useState(8.8)
-  const [ibsB,    setIbsB]    = useState(12.0)
-  const [ibsSvcB, setIbsSvcB] = useState(5.0)
-
-  const baseCompanies = useTableFilter(companies, { sector: sectorFilter })
-
-  const currentTotal = useMemo(() => baseCompanies.reduce((s, c) => s + c.totalTaxCurrent, 0), [baseCompanies])
-  const reformTotal  = useMemo(() => baseCompanies.reduce((s, c) => s + c.totalTaxReform,  0), [baseCompanies])
-  const simTotalA    = useMemo(() => baseCompanies.reduce((s, c) => s + simTax(c, cbsA, ibsA, ibsSvcA), 0), [baseCompanies, cbsA, ibsA, ibsSvcA])
-  const simTotalB    = useMemo(() => baseCompanies.reduce((s, c) => s + simTax(c, cbsB, ibsB, ibsSvcB), 0), [baseCompanies, cbsB, ibsB, ibsSvcB])
-
-  const pct = (v: number) => currentTotal ? ((v - currentTotal) / currentTotal) * 100 : 0
-
-  const offDeltaPct = pct(reformTotal)
-  const simDeltaPct = pct(simTotalA)
-  const simDeltaPctB = pct(simTotalB)
-
-  const sectorChartData = useMemo(() => {
-    const sectors = sectorFilter === 'Todos' ? SECTORS : [sectorFilter]
-    return sectors.map((s) => {
-      const cs  = companies.filter((c) => c.sector === s)
-      const cur = cs.reduce((sum, c) => sum + c.totalTaxCurrent, 0)
-      const ref = cs.reduce((sum, c) => sum + c.totalTaxReform,  0)
-      const sA  = cs.reduce((sum, c) => sum + simTax(c, cbsA, ibsA, ibsSvcA), 0)
-      const sB  = cs.reduce((sum, c) => sum + simTax(c, cbsB, ibsB, ibsSvcB), 0)
-      return {
-        name:     s.length > 13 ? s.slice(0, 12) + '…' : s,
-        atual:    Math.round(cur / 1_000),
-        reforma:  Math.round(ref / 1_000),
-        cenarioA: Math.round(sA  / 1_000),
-        cenarioB: Math.round(sB  / 1_000),
-      }
-    })
-  }, [sectorFilter, cbsA, ibsA, ibsSvcA, cbsB, ibsB, ibsSvcB])
-
-  const companyTable = useMemo(() =>
-    baseCompanies.map((c) => {
-      const sA      = simTax(c, cbsA, ibsA, ibsSvcA)
-      const sB      = simTax(c, cbsB, ibsB, ibsSvcB)
-      const dA      = sA - c.totalTaxCurrent
-      const dB      = sB - c.totalTaxCurrent
-      const dPctA   = c.totalTaxCurrent ? (dA / c.totalTaxCurrent) * 100 : 0
-      const dPctB   = c.totalTaxCurrent ? (dB / c.totalTaxCurrent) * 100 : 0
-      return { ...c, sA, sB, dA, dB, dPctA, dPctB }
-    }).sort((a, b) => b.dPctA - a.dPctA),
-    [baseCompanies, cbsA, ibsA, ibsSvcA, cbsB, ibsB, ibsSvcB],
-  )
-
-  const pctBadge = (v: number) => (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${v < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-      {v >= 0 ? '+' : ''}{v.toFixed(1)}%
-    </span>
-  )
-
-  return ready ? (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+  return (
+    <div className="card p-5">
+      <div className="flex items-end justify-between mb-4">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Simulação de Cenários</h2>
-          <p className="text-sm text-gray-500">Ajuste as alíquotas da reforma e veja o impacto em tempo real.</p>
+          <h3 className="text-sm font-semibold text-ink-900">Resumo comparativo</h3>
+          <p className="text-xs text-ink-400 mt-0.5">Carga total sob 4 regimes</p>
         </div>
-        <button
-          onClick={() => setCompareMode((v) => !v)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors print:hidden ${
-            compareMode
-              ? 'bg-primary-700 text-white'
-              : 'bg-white border border-gray-300 text-gray-600 hover:border-primary-700 hover:text-primary-700'
-          }`}
-        >
-          <GitCompare size={15} />
-          {compareMode ? 'Modo Comparação ativado' : 'Comparar dois cenários'}
-        </button>
-      </div>
-
-      {/* Filter */}
-      <div className="card p-3 sm:p-4 print:hidden">
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="w-52">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Filtrar Setor</label>
-            <select className="select-field" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
-              <option>Todos</option>
-              {SECTORS.map((s) => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-          <p className="text-xs text-gray-400 pb-1">IRPJ e CSLL: sem alteração · Serviços usam alíquota IBS-Serviços</p>
+        <div className="text-xs text-ink-400 font-mono">
+          A: {simA < current ? '−' : '+'}{fmtM(Math.abs(simA - current))} ·
+          B: {simB < current ? '−' : '+'}{fmtM(Math.abs(simB - current))}
         </div>
       </div>
 
-      {/* Slider panels */}
-      {compareMode ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden">
-          <SlidersPanel label="Cenário A" color="#009900" cbs={cbsA} ibs={ibsA} ibsSvc={ibsSvcA} onCbs={setCbsA} onIbs={setIbsA} onIbsSvc={setIbsSvcA} />
-          <SlidersPanel label="Cenário B" color="#0066cc" cbs={cbsB} ibs={ibsB} ibsSvc={ibsSvcB} onCbs={setCbsB} onIbs={setIbsB} onIbsSvc={setIbsSvcB} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="card p-4 sm:p-5 space-y-5 print:hidden">
-            <div className="space-y-5">
-              <RangeSlider label="CBS (substitui PIS + COFINS)" value={cbsA}    min={0} max={15} step={0.1} onChange={setCbsA}    color="#009900" />
-              <RangeSlider label="IBS — Bens (substitui ICMS)"  value={ibsA}    min={0} max={30} step={0.5} onChange={setIbsA}    color="#0066cc" />
-              <RangeSlider label="IBS — Serviços (subst. ISS)"  value={ibsSvcA} min={0} max={20} step={0.1} onChange={setIbsSvcA} color="#8b5cf6" />
+      <div className="flex items-end justify-between gap-4 h-36 pb-6 px-2">
+        {items.map(({ label, value, color }) => (
+          <div key={label} className="flex-1 flex flex-col items-center gap-2 h-full">
+            <div className="flex-1 w-full flex items-end">
+              <div
+                className="w-full rounded-t-sm transition-all relative"
+                style={{ height: `${(value / max) * 100}%`, background: color }}
+              >
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold whitespace-nowrap" style={{ color }}>
+                  {fmtM(value)}
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="lg:col-span-2" />
-        </div>
-      )}
-
-      {/* Summary cards */}
-      <div className={`grid gap-3 sm:gap-4 ${compareMode ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
-        {[
-          { label: 'Regime Atual',    value: fmtM(currentTotal), sub: 'Base de referência',                                         cls: 'text-gray-700',                bg: 'bg-gray-50'   },
-          { label: 'Reforma Oficial', value: fmtM(reformTotal),  sub: `${offDeltaPct >= 0 ? '+' : ''}${offDeltaPct.toFixed(1)}% vs atual`, cls: offDeltaPct < 0 ? 'text-green-700' : 'text-red-700', bg: offDeltaPct < 0 ? 'bg-green-50' : 'bg-red-50' },
-          { label: compareMode ? 'Cenário A' : 'Cenário Simulado', value: fmtM(simTotalA), sub: `${simDeltaPct >= 0 ? '+' : ''}${simDeltaPct.toFixed(1)}% vs atual`, cls: simDeltaPct < 0 ? 'text-green-700' : 'text-red-700', bg: simDeltaPct < 0 ? 'bg-green-50' : 'bg-red-50' },
-          ...(compareMode ? [{
-            label: 'Cenário B', value: fmtM(simTotalB), sub: `${simDeltaPctB >= 0 ? '+' : ''}${simDeltaPctB.toFixed(1)}% vs atual`,
-            cls: simDeltaPctB < 0 ? 'text-green-700' : 'text-red-700', bg: simDeltaPctB < 0 ? 'bg-green-50' : 'bg-red-50',
-          }] : []),
-        ].map((k) => (
-          <div key={k.label} className={`card p-4 ${k.bg}`}>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{k.label}</p>
-            <p className={`text-xl font-bold mt-1 ${k.cls}`}>{k.value}</p>
-            <p className={`text-xs mt-1 ${k.cls}`}>{k.sub}</p>
+            <span className="text-[11px] text-ink-600 font-medium text-center">{label}</span>
           </div>
         ))}
       </div>
+    </div>
+  )
+}
 
-      {/* Chart */}
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Comparativo por Setor (R$ M)</h3>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={sectorChartData} margin={{ left: 10, right: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}M`} />
-            <Tooltip content={<ChartTooltip />} />
-            <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
-            <Bar dataKey="atual"    name="Regime Atual"    fill="#6b7280" radius={[3, 3, 0, 0]} />
-            <Bar dataKey="reforma"  name="Reforma Oficial" fill="#f59e0b" radius={[3, 3, 0, 0]} />
-            <Bar dataKey="cenarioA" name={compareMode ? 'Cenário A' : 'Simulação'} fill="#009900" radius={[3, 3, 0, 0]} />
-            {compareMode && <Bar dataKey="cenarioB" name="Cenário B" fill="#0066cc" radius={[3, 3, 0, 0]} />}
-          </BarChart>
-        </ResponsiveContainer>
+const DEFAULTS_A = { cbs: 7.5, ibsBens: 14.0, ibsSvc: 12.0 }
+const DEFAULTS_B = { cbs: 9.5, ibsBens: 19.0, ibsSvc: 16.0 }
+
+export default function ScenarioPage() {
+  const ready = usePageReady()
+
+  const [cbsA,    setCbsA]    = useState(DEFAULTS_A.cbs)
+  const [ibsBensA, setIbsBensA] = useState(DEFAULTS_A.ibsBens)
+  const [ibsSvcA, setIbsSvcA] = useState(DEFAULTS_A.ibsSvc)
+
+  const [cbsB,    setCbsB]    = useState(DEFAULTS_B.cbs)
+  const [ibsBensB, setIbsBensB] = useState(DEFAULTS_B.ibsBens)
+  const [ibsSvcB, setIbsSvcB] = useState(DEFAULTS_B.ibsSvc)
+
+  const current = useMemo(() => branches.reduce((s, b) => s + b.totalTaxCurrent, 0), [])
+  const reform  = useMemo(() => branches.reduce((s, b) => s + b.totalTaxReform,  0), [])
+  const simA    = useMemo(() => branches.reduce((s, b) => s + simTax(b, cbsA, ibsBensA, ibsSvcA), 0), [cbsA, ibsBensA, ibsSvcA])
+  const simB    = useMemo(() => branches.reduce((s, b) => s + simTax(b, cbsB, ibsBensB, ibsSvcB), 0), [cbsB, ibsBensB, ibsSvcB])
+
+  const branchTable = useMemo(() => branches.map((b) => {
+    const a  = simTax(b, cbsA, ibsBensA, ibsSvcA)
+    const bs = simTax(b, cbsB, ibsBensB, ibsSvcB)
+    return {
+      ...b,
+      simA: a, simB: bs,
+      dPctA: b.totalTaxCurrent ? ((a  - b.totalTaxCurrent) / b.totalTaxCurrent) * 100 : 0,
+      dPctB: b.totalTaxCurrent ? ((bs - b.totalTaxCurrent) / b.totalTaxCurrent) * 100 : 0,
+    }
+  }).sort((a, b) => a.dPctA - b.dPctA), [cbsA, ibsBensA, ibsSvcA, cbsB, ibsBensB, ibsSvcB])
+
+  if (!ready) return <SkeletonScenarioPage />
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-ink-900 tracking-tight">E se a alíquota fosse outra?</h2>
+          <p className="text-sm text-ink-400 mt-0.5">
+            Ajuste CBS e IBS e veja em tempo real o impacto sobre o Grupo Meridional. Compare dois cenários.
+          </p>
+        </div>
       </div>
 
-      {/* Company table */}
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-1">Impacto Simulado por Empresa</h3>
-        <p className="text-xs text-gray-400 mb-4">Verde = redução de carga · Vermelho = aumento de carga</p>
+      {/* Comparison bars */}
+      <ComparisonBars current={current} reform={reform} simA={simA} simB={simB} />
+
+      {/* Two scenario cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ScenarioPanel
+          tag="CENÁRIO A" title="Otimista · alíquotas reduzidas"
+          color={COLOR_A}
+          cbs={cbsA} ibsBens={ibsBensA} ibsSvc={ibsSvcA}
+          onCbs={setCbsA} onBens={setIbsBensA} onSvc={setIbsSvcA}
+          onReset={() => { setCbsA(DEFAULTS_A.cbs); setIbsBensA(DEFAULTS_A.ibsBens); setIbsSvcA(DEFAULTS_A.ibsSvc) }}
+          total={simA} delta={simA - current}
+        />
+        <ScenarioPanel
+          tag="CENÁRIO B" title="Conservador · alíquotas elevadas"
+          color={COLOR_B}
+          cbs={cbsB} ibsBens={ibsBensB} ibsSvc={ibsSvcB}
+          onCbs={setCbsB} onBens={setIbsBensB} onSvc={setIbsSvcB}
+          onReset={() => { setCbsB(DEFAULTS_B.cbs); setIbsBensB(DEFAULTS_B.ibsBens); setIbsSvcB(DEFAULTS_B.ibsSvc) }}
+          total={simB} delta={simB - current}
+        />
+      </div>
+
+      {/* Per-branch table */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3 border-b border-ink-100">
+          <h3 className="text-sm font-semibold text-ink-900">Impacto por filial</h3>
+          <p className="text-xs text-ink-400 mt-0.5">Verde = redução · Vermelho = aumento · IRPJ e CSLL sem alteração</p>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="text-xs text-gray-500 border-b border-gray-200">
-                <th className="text-left py-2 px-3 font-semibold">Empresa</th>
-                <th className="text-left py-2 px-3 font-semibold">Setor</th>
-                <th className="text-right py-2 px-3 font-semibold">Atual</th>
-                {compareMode ? (
-                  <>
-                    <th className="text-right py-2 px-3 font-semibold">Cenário A</th>
-                    <th className="text-right py-2 px-3 font-semibold">Δ A</th>
-                    <th className="text-right py-2 px-3 font-semibold">Cenário B</th>
-                    <th className="text-right py-2 px-3 font-semibold">Δ B</th>
-                  </>
-                ) : (
-                  <>
-                    <th className="text-right py-2 px-3 font-semibold">Simulação</th>
-                    <th className="text-right py-2 px-3 font-semibold">Variação R$</th>
-                    <th className="text-right py-2 px-3 font-semibold">Variação %</th>
-                  </>
-                )}
+              <tr className="bg-ink-50 border-b border-ink-200">
+                <th className="text-left px-4 py-2.5 font-semibold text-ink-500 uppercase tracking-wider text-[11px]">Filial</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-ink-500 uppercase tracking-wider text-[11px]">Segmento</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-ink-500 uppercase tracking-wider text-[11px]">Atual</th>
+                <th className="text-right px-4 py-2.5 font-semibold uppercase tracking-wider text-[11px]" style={{ color: COLOR_A }}>Cenário A</th>
+                <th className="text-right px-4 py-2.5 font-semibold uppercase tracking-wider text-[11px]" style={{ color: COLOR_A }}>Δ A</th>
+                <th className="text-right px-4 py-2.5 font-semibold uppercase tracking-wider text-[11px]" style={{ color: COLOR_B }}>Cenário B</th>
+                <th className="text-right px-4 py-2.5 font-semibold uppercase tracking-wider text-[11px]" style={{ color: COLOR_B }}>Δ B</th>
               </tr>
             </thead>
             <tbody>
-              {companyTable.map((c, i) => (
-                <tr key={c.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="py-2 px-3 font-medium text-gray-800">{c.name}</td>
-                  <td className="py-2 px-3 text-gray-500">{c.sector}</td>
-                  <td className="py-2 px-3 text-right text-gray-700">{fmtM(c.totalTaxCurrent)}</td>
-                  {compareMode ? (
-                    <>
-                      <td className="py-2 px-3 text-right text-gray-700">{fmtM(c.sA)}</td>
-                      <td className="py-2 px-3 text-right">{pctBadge(c.dPctA)}</td>
-                      <td className="py-2 px-3 text-right text-gray-700">{fmtM(c.sB)}</td>
-                      <td className="py-2 px-3 text-right">{pctBadge(c.dPctB)}</td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="py-2 px-3 text-right text-gray-700">{fmtM(c.sA)}</td>
-                      <td className={`py-2 px-3 text-right font-medium ${c.dA < 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {c.dA < 0 ? '' : '+'}{fmtM(c.dA)}
-                      </td>
-                      <td className="py-2 px-3 text-right">{pctBadge(c.dPctA)}</td>
-                    </>
-                  )}
+              {branchTable.map((b, i) => (
+                <tr key={b.id} className={`border-b border-ink-100 ${i % 2 === 0 ? '' : 'bg-ink-50'}`}>
+                  <td className="px-4 py-2.5 font-medium text-ink-800">{b.name}</td>
+                  <td className="px-4 py-2.5 text-ink-500">{b.sector}</td>
+                  <td className="px-4 py-2.5 text-right font-mono text-ink-700">{fmtM(b.totalTaxCurrent)}</td>
+                  <td className="px-4 py-2.5 text-right font-mono text-ink-700">{fmtM(b.simA)}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    <span className={`font-mono font-semibold ${b.dPctA < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
+                      {b.dPctA > 0 ? '+' : ''}{b.dPctA.toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-right font-mono text-ink-700">{fmtM(b.simB)}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    <span className={`font-mono font-semibold ${b.dPctB < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
+                      {b.dPctB > 0 ? '+' : ''}{b.dPctB.toFixed(1)}%
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -255,5 +238,5 @@ export default function ScenarioPage() {
         </div>
       </div>
     </div>
-  ) : <SkeletonScenarioPage />
+  )
 }

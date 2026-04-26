@@ -11,9 +11,9 @@ export interface BrandTheme {
 export const PRESET_THEMES: Record<string, BrandTheme> = {
   'kliente360': {
     name: 'Kliente 360 (padrão)',
-    primaryColor: '#009900',
-    primaryDark:  '#007700',
-    primaryLight: '#f0fff0',
+    primaryColor: '#e30613',
+    primaryDark:  '#b8040d',
+    primaryLight: '#fde8e8',
     logoText:     'K',
     brandName:    'Analitico KLA',
     brandSubtitle: 'Analytics & Reforma Tributária',

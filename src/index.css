@@ -1,71 +1,146 @@
+/* ─── Design tokens KLA ─────────────────────────────────────────────────── */
 :root {
-  --brand-primary-50:  #f0fff0;
-  --brand-primary-100: #dcffdc;
-  --brand-primary-200: #b9ffb9;
-  --brand-primary-500: #00dd00;
-  --brand-primary-600: #00bb00;
-  --brand-primary-700: #009900;
-  --brand-primary-800: #007700;
-  --brand-primary-900: #005500;
-  --brand-logo-text: 'K';
-  --brand-name: 'Analitico KLA';
-  --brand-subtitle: 'Analytics & Reforma Tributária';
+  --kla-primary:     #e30613;
+  --kla-primary-600: #d01010;
+  --kla-primary-500: #e81b1b;
+  --kla-primary-300: #f88080;
+  --kla-primary-100: #fde8e8;
+
+  --kla-accent-up:   #d04a3b;
+  --kla-accent-down: #1f7a5a;
+  --kla-accent-warn: #b87514;
+
+  --ink-900: #0f1722;
+  --ink-700: #2c3848;
+  --ink-500: #5a6779;
+  --ink-400: #8390a3;
+  --ink-300: #b3bccb;
+  --ink-200: #d8dee8;
+  --ink-100: #eceff5;
+  --ink-50:  #f6f8fb;
+  --paper:   #ffffff;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 34, 0.05);
+  --shadow-md: 0 4px 14px rgba(15, 23, 34, 0.08);
+
+  /* ThemeProvider runtime overrides */
+  --brand-primary-700: #e30613;
+  --brand-primary-800: #b8040d;
+  --brand-primary-50:  #fde8e8;
 }
 
+[data-theme="dark"] {
+  --paper:   #0c1320;
+  --ink-50:  #121b2a;
+  --ink-100: #1a2434;
+  --ink-200: #25324a;
+  --ink-300: #3a4a66;
+  --ink-400: #6e7e98;
+  --ink-500: #98a4ba;
+  --ink-700: #d6dde9;
+  --ink-900: #f3f5f9;
+  --kla-primary-100: #3d0408;
+}
+
+/* ─── Tailwind directives ───────────────────────────────────────────────── */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Base ──────────────────────────────────────────────────────────────── */
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-ink-50 text-ink-900 antialiased;
+    font-feature-settings: "tnum";
+  }
+
+  [data-theme="dark"] body,
+  [data-theme="dark"] {
+    @apply bg-ink-50 text-ink-900;
   }
 }
 
+/* ─── Component primitives ──────────────────────────────────────────────── */
 @layer components {
   .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+    @apply bg-paper rounded-lg border border-ink-200;
+    box-shadow: var(--shadow-sm);
   }
+
+  .card-md {
+    @apply bg-paper rounded-xl border border-ink-200;
+    box-shadow: var(--shadow-md);
+  }
+
   .btn-primary {
-    @apply bg-primary-700 hover:bg-primary-800 text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50;
+    @apply inline-flex items-center gap-2 bg-primary-700 hover:bg-primary-800
+           text-white font-medium text-sm px-4 py-2 rounded transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
+
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-lg border border-gray-300 transition-colors;
+    @apply inline-flex items-center gap-2 bg-paper hover:bg-ink-50
+           text-ink-700 font-medium text-sm px-4 py-2 rounded
+           border border-ink-200 transition-colors;
   }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 text-sm text-ink-500
+           hover:text-ink-900 transition-colors px-2 py-1.5 rounded
+           hover:bg-ink-100;
+  }
+
   .select-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-ink-200 rounded bg-paper
+           text-sm text-ink-900 focus:outline-none focus:ring-2
+           focus:ring-primary-700 focus:border-transparent;
   }
+
   .input-field {
-    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent;
+    @apply w-full px-4 py-2.5 border border-ink-200 rounded bg-paper
+           text-sm text-ink-900 focus:outline-none focus:ring-2
+           focus:ring-primary-700 focus:border-transparent;
   }
-  .badge-positive {
-    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800;
+
+  /* Badges semânticos tributários */
+  .badge-down {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+           bg-green-50 text-accent-down;
   }
-  .badge-negative {
-    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800;
+  .badge-up {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+           bg-red-50 text-accent-up;
+  }
+  .badge-warn {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+           bg-amber-50 text-accent-warn;
   }
   .badge-neutral {
-    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600;
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+           bg-ink-100 text-ink-500;
+  }
+
+  /* Backwards-compat */
+  .badge-positive { @apply badge-down; }
+  .badge-negative { @apply badge-up; }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded text-sm text-ink-500
+           hover:bg-ink-100 hover:text-ink-900 transition-colors cursor-pointer
+           whitespace-nowrap;
+  }
+  .nav-item-active {
+    @apply bg-primary-100 text-primary-700 font-semibold
+           border-l-[3px] border-primary-700 pl-[9px];
   }
 }
 
+/* ─── Print ─────────────────────────────────────────────────────────────── */
 @media print {
-  /* Hide chrome — only content prints */
-  header, footer { display: none !important; }
-  .print\:hidden  { display: none !important; }
-
-  body { background: white; }
-
-  main {
-    padding: 0 !important;
-    max-width: 100% !important;
-  }
-
-  /* Prevent charts and cards from splitting across pages */
-  .card { break-inside: avoid; page-break-inside: avoid; }
-
-  /* Make content full-width */
-  .lg\:col-span-2, .lg\:grid-cols-3, .lg\:grid-cols-2 {
-    grid-template-columns: 1fr !important;
-  }
+  aside, header, footer { display: none !important; }
+  .print\:hidden         { display: none !important; }
+  body                   { background: white; }
+  main                   { padding: 0 !important; max-width: 100% !important; }
+  .card, .card-md        { break-inside: avoid; page-break-inside: avoid; }
 }

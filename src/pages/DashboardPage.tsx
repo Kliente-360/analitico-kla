@@ -1,201 +1,198 @@
-import { useMemo } from 'react'
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LabelList,
-} from 'recharts'
-import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  SortableContext, useSortable, rectSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { Building2, DollarSign, TrendingDown, TrendingUp, GripVertical, RotateCcw } from 'lucide-react'
-import { companies, SECTORS } from '../data/mockData'
-import { CHART_COLORS } from '../constants'
+import { TrendingDown, Building2, DollarSign, Users, AlertTriangle } from 'lucide-react'
+import { branches, BUSINESS_LINES, TENANT } from '../data/mockData'
 import { fmtM, fmtPct, fmtNum } from '../utils/formatters'
 import { KpiCard } from '../components/KpiCard'
-import { ChartTooltip } from '../components/ChartTooltip'
-import { SkeletonKpiCard, SkeletonChart } from '../components/Skeleton'
-import { usePageReady } from '../hooks/usePageReady'
-import { useDashboardLayout, type WidgetId } from '../hooks/useDashboardLayout'
+import { BUSINESS_LINE_COLORS } from '../constants'
 
-const sum = (arr: typeof companies, fn: (c: (typeof companies)[0]) => number) =>
-  arr.reduce((s, x) => s + fn(x), 0)
+// ─── Totais agregados ──────────────────────────────────────────────────────────
 
-const totalReceita      = sum(companies, (c) => c.revenue)
-const totalAtual        = sum(companies, (c) => c.totalTaxCurrent)
-const totalReforma      = sum(companies, (c) => c.totalTaxReform)
-const totalFuncionarios = sum(companies, (c) => c.employees)
-const mediaImpacto      = sum(companies, (c) => c.taxDeltaPercent) / companies.length
+const totalRevenue   = branches.reduce((s, b) => s + b.revenue, 0)
+const totalCurrent   = branches.reduce((s, b) => s + b.totalTaxCurrent, 0)
+const totalReform    = branches.reduce((s, b) => s + b.totalTaxReform, 0)
+const totalSavings   = totalCurrent - totalReform
+const savingsPct     = (totalSavings / totalCurrent) * 100
+const avgRateCurrent = (totalCurrent / totalRevenue) * 100
+const avgRateReform  = (totalReform  / totalRevenue) * 100
+const totalEmployees = branches.reduce((s, b) => s + b.employees, 0)
 
-const sectorData = SECTORS.map((s) => {
-  const cs = companies.filter((c) => c.sector === s)
-  return {
-    name:    s.length > 14 ? s.slice(0, 13) + '…' : s,
-    receita: Math.round(sum(cs, (c) => c.revenue) / 1_000),
-    atual:   Math.round(sum(cs, (c) => c.totalTaxCurrent) / 1_000),
-    reforma: Math.round(sum(cs, (c) => c.totalTaxReform)  / 1_000),
-    delta:   sum(cs, (c) => c.taxDeltaPercent) / cs.length,
-  }
-}).sort((a, b) => b.receita - a.receita)
-
-const taxComposition = [
-  { name: 'ICMS',   value: Math.round(sum(companies, (c) => c.icms)   / 1_000), color: '#ef4444' },
-  { name: 'COFINS', value: Math.round(sum(companies, (c) => c.cofins) / 1_000), color: '#009900' },
-  { name: 'IRPJ',   value: Math.round(sum(companies, (c) => c.irpj)   / 1_000), color: '#0066cc' },
-  { name: 'ISS',    value: Math.round(sum(companies, (c) => c.iss)    / 1_000), color: '#f59e0b' },
-  { name: 'CSLL',   value: Math.round(sum(companies, (c) => c.csll)   / 1_000), color: '#8b5cf6' },
-  { name: 'PIS',    value: Math.round(sum(companies, (c) => c.pis)    / 1_000), color: '#06b6d4' },
+// Tributo com maior participação atual
+const TAX_FIELDS: { key: keyof typeof branches[0]; label: string }[] = [
+  { key: 'icms',   label: 'ICMS'   },
+  { key: 'cofins', label: 'COFINS' },
+  { key: 'irpj',   label: 'IRPJ'   },
+  { key: 'iss',    label: 'ISS'    },
+  { key: 'csll',   label: 'CSLL'   },
+  { key: 'pis',    label: 'PIS'    },
 ]
 
-const sizeData = [
-  { name: 'Grande',  value: companies.filter((c) => c.size === 'Grande').length,  color: '#009900' },
-  { name: 'Média',   value: companies.filter((c) => c.size === 'Média').length,   color: '#0066cc' },
-  { name: 'Pequena', value: companies.filter((c) => c.size === 'Pequena').length, color: '#f59e0b' },
-]
+const taxBreakdown = TAX_FIELDS.map(({ key, label }) => ({
+  label,
+  value: branches.reduce((s, b) => s + (b[key] as number), 0),
+})).sort((a, b) => b.value - a.value)
 
-// Sortable card wrapper
-function SortableCard({ id, children }: { id: WidgetId; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+const topTax    = taxBreakdown[0]
+const topTaxPct = (topTax.value / totalCurrent) * 100
+
+// Filial com maior carga absoluta
+const topBranch = [...branches].sort((a, b) => b.totalTaxCurrent - a.totalTaxCurrent)[0]
+
+// Filial com anomalia (ISS > 50% da carga)
+const anomaly = branches.find((b) => b.iss > 0 && (b.iss / b.totalTaxCurrent) > 0.45)
+
+// ─── Componentes ──────────────────────────────────────────────────────────────
+
+function HeroImpact() {
+  const barMax = Math.max(totalCurrent, totalReform)
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-        zIndex: isDragging ? 50 : undefined,
-      }}
-    >
-      <div className="relative group">
-        <button
-          {...attributes}
-          {...listeners}
-          aria-label="Arrastar widget"
-          className="absolute top-2 right-2 p-1 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10 print:hidden"
-        >
-          <GripVertical size={14} />
-        </button>
-        {children}
+    <div className="rounded-xl bg-primary-700 text-white p-6 sm:p-8">
+      <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-3">
+        Impacto da Reforma Tributária · {TENANT.fiscalYear}
+      </p>
+      <h1 className="font-display text-2xl sm:text-3xl font-semibold leading-tight tracking-tight mb-6">
+        O <span className="text-white">{TENANT.name}</span> vai pagar{' '}
+        <span className="underline decoration-white/40 decoration-2 underline-offset-4">
+          {fmtM(totalSavings)} a menos
+        </span>{' '}
+        com a reforma.
+      </h1>
+
+      {/* Comparison bars */}
+      <div className="space-y-3 mb-6">
+        {[
+          { label: 'Regime atual',       value: totalCurrent, color: 'bg-white/30' },
+          { label: 'Pós-reforma (2033)', value: totalReform,  color: 'bg-white'    },
+        ].map(({ label, value, color }) => (
+          <div key={label}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-white/70">{label}</span>
+              <span className="font-mono text-sm font-semibold text-white">{fmtM(value)}</span>
+            </div>
+            <div className="h-2 bg-white/15 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${color} transition-all`}
+                style={{ width: `${(value / barMax) * 100}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <TrendingDown size={16} className="text-white/80" />
+        <span className="text-sm font-semibold text-white">
+          {fmtPct(savingsPct)} de redução na carga tributária total
+        </span>
       </div>
     </div>
   )
 }
 
-// Individual widgets
-function KpiSummaryWidget() {
+function KpiStrip() {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-      <KpiCard label="Total de Empresas" value={String(companies.length)} sub={`${SECTORS.length} setores`} icon={<Building2 size={20} />} accent="green" />
-      <KpiCard label="Receita Total" value={fmtM(totalReceita)} sub="em R$ mil" icon={<DollarSign size={20} />} accent="blue" />
-      <KpiCard label="Impostos — Regime Atual" value={fmtM(totalAtual)} sub={`${((totalAtual / totalReceita) * 100).toFixed(1)}% da receita`} icon={<DollarSign size={20} />} accent="amber" />
-      <KpiCard label="Impostos — Pós-Reforma" value={fmtM(totalReforma)} sub={`${((totalReforma / totalReceita) * 100).toFixed(1)}% da receita`} icon={<DollarSign size={20} />} accent={totalReforma < totalAtual ? 'green' : 'red'} />
-      <KpiCard label="Impacto Médio da Reforma" value={fmtPct(mediaImpacto)} sub={`${fmtNum(totalFuncionarios)} funcionários`} icon={mediaImpacto < 0 ? <TrendingDown size={20} /> : <TrendingUp size={20} />} accent={mediaImpacto < 0 ? 'green' : 'red'} />
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <KpiCard
+        label="Receita total"
+        value={fmtM(totalRevenue)}
+        sub={`${fmtNum(totalEmployees)} colaboradores`}
+        icon={<DollarSign size={18} />}
+        accent="neutral"
+      />
+      <KpiCard
+        label="Carga atual"
+        value={fmtM(totalCurrent)}
+        sub={`${avgRateCurrent.toFixed(1)}% da receita`}
+        icon={<DollarSign size={18} />}
+        accent="neutral"
+      />
+      <KpiCard
+        label="Carga pós-reforma"
+        value={fmtM(totalReform)}
+        sub={`${avgRateReform.toFixed(1)}% da receita`}
+        icon={<DollarSign size={18} />}
+        accent="down"
+        delta={-savingsPct}
+      />
+      <KpiCard
+        label="Filiais ativas"
+        value={String(branches.length)}
+        sub={`${[...new Set(branches.map((b) => b.state))].length} estados`}
+        icon={<Building2 size={18} />}
+        accent="neutral"
+      />
+      <KpiCard
+        label="Período pleno"
+        value="2033"
+        sub="Plena implementação"
+        icon={<Users size={18} />}
+        accent="primary"
+      />
     </div>
   )
 }
 
-function SectorRevenueWidget() {
+function CompositionBars() {
+  const max = taxBreakdown[0].value
   return (
     <div className="card p-5">
-      <h3 className="text-sm font-semibold text-gray-700 mb-4">Receita Total por Setor (R$ M)</h3>
-      <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={sectorData} layout="vertical" margin={{ left: 10, right: 30 }}>
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-          <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}M`} />
-          <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
-          <Tooltip content={<ChartTooltip />} />
-          <Bar dataKey="receita" name="Receita" fill="#009900" radius={[0, 4, 4, 0]}>
-            <LabelList dataKey="receita" position="right" formatter={(v: number) => `${v}M`} style={{ fontSize: 10 }} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <h3 className="text-sm font-semibold text-ink-900 mb-1">Composição da carga atual</h3>
+      <p className="text-xs text-ink-400 mb-4">Tributos por valor total (R$ M)</p>
+      <div className="space-y-2.5">
+        {taxBreakdown.map(({ label, value }) => (
+          <div key={label} className="flex items-center gap-3">
+            <span className="w-14 text-xs font-mono text-ink-500 text-right flex-shrink-0">{label}</span>
+            <div className="flex-1 h-5 bg-ink-100 rounded overflow-hidden">
+              <div
+                className="h-full bg-primary-700 rounded transition-all"
+                style={{ width: `${(value / max) * 100}%`, opacity: 0.7 + (value / max) * 0.3 }}
+              />
+            </div>
+            <span className="w-16 text-xs font-mono text-ink-700 text-right flex-shrink-0">{fmtM(value)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
-function TaxCompositionWidget() {
-  return (
-    <div className="card p-5">
-      <h3 className="text-sm font-semibold text-gray-700 mb-4">Composição de Impostos Atuais</h3>
-      <ResponsiveContainer width="100%" height={200}>
-        <PieChart>
-          <Pie data={taxComposition} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={40}>
-            {taxComposition.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-          </Pie>
-          <Tooltip formatter={(v: number) => fmtM(v)} />
-          <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
+function FilialBars() {
+  const sorted = [...branches].sort((a, b) => b.totalTaxCurrent - a.totalTaxCurrent)
+  const max    = sorted[0].totalTaxCurrent
 
-function ReformImpactWidget() {
   return (
     <div className="card p-5">
-      <h3 className="text-sm font-semibold text-gray-700 mb-1">Impacto da Reforma Tributária por Setor</h3>
-      <p className="text-xs text-gray-400 mb-4">Comparativo entre carga tributária atual e pós-reforma (R$ M)</p>
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={sectorData} margin={{ left: 10, right: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}M`} />
-          <Tooltip content={<ChartTooltip />} />
-          <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 11 }}>{v}</span>} />
-          <Bar dataKey="atual"   name="Regime Atual" fill="#0066cc" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="reforma" name="Pós-Reforma"  fill="#009900" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-function DeltaPctWidget() {
-  return (
-    <div className="card p-5">
-      <h3 className="text-sm font-semibold text-gray-700 mb-4">Variação % por Setor (Atual → Reforma)</h3>
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={sectorData} layout="vertical" margin={{ left: 10, right: 40 }}>
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-          <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
-          <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
-          <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, 'Variação']} />
-          <Bar dataKey="delta" name="Variação %" radius={[0, 4, 4, 0]}>
-            {sectorData.map((entry, i) => (
-              <Cell key={i} fill={entry.delta < 0 ? '#009900' : '#ef4444'} />
-            ))}
-            <LabelList dataKey="delta" position="right" formatter={(v: number) => `${v.toFixed(1)}%`} style={{ fontSize: 10 }} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-function SizeDistWidget() {
-  return (
-    <div className="card p-5">
-      <h3 className="text-sm font-semibold text-gray-700 mb-4">Distribuição por Porte</h3>
-      <ResponsiveContainer width="100%" height={180}>
-        <PieChart>
-          <Pie data={sizeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={35}
-            label={({ name, value }) => `${name}: ${value}`} labelLine={false}>
-            {sizeData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-          </Pie>
-          <Tooltip />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {sizeData.map((s) => {
-          const cs = companies.filter((c) => c.size === s.name as 'Grande' | 'Média' | 'Pequena')
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm font-semibold text-ink-900">Impacto por filial</h3>
+          <p className="text-xs text-ink-400 mt-0.5">Carga atual vs reforma · R$ M</p>
+        </div>
+        <div className="flex items-center gap-3 text-[11px] text-ink-400">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-2 rounded-sm bg-ink-300" />Atual
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-2 rounded-sm bg-primary-700" />Reforma
+          </span>
+        </div>
+      </div>
+      <div className="space-y-2">
+        {sorted.map((b) => {
+          const deltaPct = b.taxDeltaPercent
           return (
-            <div key={s.name} className="text-center p-3 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-500">{s.name}</p>
-              <p className="font-bold" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-xs text-gray-400">{fmtM(sum(cs, (c) => c.revenue))}</p>
+            <div key={b.id} className="flex items-center gap-3">
+              <span className="w-36 text-xs text-ink-600 truncate flex-shrink-0">{b.name}</span>
+              <div className="flex-1 space-y-0.5">
+                <div className="h-2 bg-ink-100 rounded overflow-hidden">
+                  <div className="h-full bg-ink-300 rounded" style={{ width: `${(b.totalTaxCurrent / max) * 100}%` }} />
+                </div>
+                <div className="h-2 bg-ink-100 rounded overflow-hidden">
+                  <div className="h-full bg-primary-700 rounded" style={{ width: `${(b.totalTaxReform / max) * 100}%` }} />
+                </div>
+              </div>
+              <span className={`w-14 text-right text-[11px] font-semibold font-mono flex-shrink-0 ${
+                deltaPct < 0 ? 'text-accent-down' : 'text-accent-up'
+              }`}>
+                {deltaPct > 0 ? '+' : ''}{deltaPct.toFixed(1)}%
+              </span>
             </div>
           )
         })}
@@ -204,100 +201,113 @@ function SizeDistWidget() {
   )
 }
 
-const WIDGET_COMPONENTS: Record<WidgetId, React.ReactNode> = {
-  'kpi-summary':    <KpiSummaryWidget />,
-  'sector-revenue': <SectorRevenueWidget />,
-  'tax-composition': <TaxCompositionWidget />,
-  'reform-impact':  <ReformImpactWidget />,
-  'delta-pct':      <DeltaPctWidget />,
-  'size-dist':      <SizeDistWidget />,
-}
+const bestReduction = [...branches].sort((a, b) => a.taxDeltaPercent - b.taxDeltaPercent)[0]
 
-// Layout hints: some widgets span full width, others are col-span-2 in a 3-col grid
-const WIDGET_SPAN: Record<WidgetId, string> = {
-  'kpi-summary':     'col-span-full',
-  'sector-revenue':  'lg:col-span-2',
-  'tax-composition': 'lg:col-span-1',
-  'reform-impact':   'col-span-full',
-  'delta-pct':       'lg:col-span-1',
-  'size-dist':       'lg:col-span-1',
-}
-
-function SkeletonDashboard() {
+function InsightCards() {
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-        {[1,2,3,4,5].map((i) => <SkeletonKpiCard key={i} />)}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Top branch */}
+      <div className="card p-4">
+        <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-widest mb-2">Maior contribuinte</p>
+        <p className="text-sm font-semibold text-ink-900">{topBranch.name}</p>
+        <p className="text-xs text-ink-400 mt-1">
+          {fmtM(topBranch.totalTaxCurrent)} · {((topBranch.totalTaxCurrent / totalCurrent) * 100).toFixed(0)}% do total
+        </p>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2"><SkeletonChart height={260} /></div>
-        <SkeletonChart height={200} />
+
+      {/* Dominant tax */}
+      <div className="card p-4">
+        <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-widest mb-2">Tributo dominante</p>
+        <p className="text-sm font-semibold text-ink-900">{topTax.label}</p>
+        <p className="text-xs text-ink-400 mt-1">
+          {fmtM(topTax.value)} · {topTaxPct.toFixed(0)}% da carga total
+        </p>
       </div>
-      <SkeletonChart height={240} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SkeletonChart height={220} />
-        <SkeletonChart height={180} />
+
+      {/* Anomaly or best reduction */}
+      {anomaly ? (
+        <div className="card p-4 border-accent-warn bg-amber-50/50">
+          <p className="text-[11px] font-semibold text-accent-warn uppercase tracking-widest mb-2 flex items-center gap-1">
+            <AlertTriangle size={11} /> Atenção
+          </p>
+          <p className="text-sm font-semibold text-ink-900">{anomaly.name}</p>
+          <p className="text-xs text-ink-500 mt-1">
+            ISS representa {((anomaly.iss / anomaly.totalTaxCurrent) * 100).toFixed(0)}% da carga
+          </p>
+        </div>
+      ) : (
+        <div className="card p-4">
+          <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-widest mb-2">Maior redução</p>
+          <p className="text-sm font-semibold text-ink-900">{bestReduction.name}</p>
+          <p className="text-xs text-accent-down mt-1 font-semibold">{bestReduction.taxDeltaPercent.toFixed(1)}%</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BusinessLineChart() {
+  const data = BUSINESS_LINES.map((line) => {
+    const bs  = branches.filter((b) => b.sector === line)
+    return {
+      label:   line,
+      current: bs.reduce((s, b) => s + b.totalTaxCurrent, 0),
+      reform:  bs.reduce((s, b) => s + b.totalTaxReform,  0),
+      color:   (BUSINESS_LINE_COLORS as Record<string, string>)[line] ?? '#5a6779',
+    }
+  }).sort((a, b) => b.current - a.current)
+
+  const max = data[0].current
+
+  return (
+    <div className="card p-5">
+      <h3 className="text-sm font-semibold text-ink-900 mb-1">Por linha de negócio</h3>
+      <p className="text-xs text-ink-400 mb-4">Carga atual vs reforma por segmento</p>
+      <div className="space-y-4">
+        {data.map(({ label, current, reform, color }) => {
+          const delta = ((reform - current) / current) * 100
+          return (
+            <div key={label}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-ink-700 flex items-center gap-1.5">
+                  <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: color }} />
+                  {label}
+                </span>
+                <span className={`text-[11px] font-semibold font-mono ${delta < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
+                  {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
+                </span>
+              </div>
+              <div className="space-y-0.5">
+                <div className="h-2 bg-ink-100 rounded overflow-hidden">
+                  <div className="h-full rounded opacity-40" style={{ width: `${(current / max) * 100}%`, background: color }} />
+                </div>
+                <div className="h-2 bg-ink-100 rounded overflow-hidden">
+                  <div className="h-full rounded" style={{ width: `${(reform / max) * 100}%`, background: color }} />
+                </div>
+              </div>
+              <div className="flex justify-between mt-1 text-[10px] font-mono text-ink-400">
+                <span>atual {fmtM(current)}</span>
+                <span>reforma {fmtM(reform)}</span>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
 export default function DashboardPage() {
-  const ready = usePageReady()
-  const { order, handleDragEnd, resetOrder } = useDashboardLayout()
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-  )
-
-  const onDragEnd = useMemo(() => (event: DragEndEvent) => {
-    const { active, over } = event
-    if (over && active.id !== over.id) {
-      handleDragEnd(active.id as WidgetId, over.id as WidgetId)
-    }
-  }, [handleDragEnd])
-
-  if (!ready) return <SkeletonDashboard />
-
-  // Group widgets into rows based on their span for layout
-  // kpi-summary: full width (own row)
-  // sector-revenue (2/3) + tax-composition (1/3): same row
-  // reform-impact: full width (own row)
-  // delta-pct (1/2) + size-dist (1/2): same row
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between print:hidden">
-        <p className="text-xs text-gray-400 flex items-center gap-1.5">
-          <GripVertical size={12} />
-          Arraste os widgets para reorganizar o dashboard
-        </p>
-        <button
-          onClick={resetOrder}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-          title="Restaurar ordem padrão"
-        >
-          <RotateCcw size={12} />
-          Restaurar padrão
-        </button>
+    <div className="space-y-5">
+      <HeroImpact />
+      <KpiStrip />
+      <InsightCards />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <CompositionBars />
+        <BusinessLineChart />
       </div>
-
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={order} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {order.map((id) => (
-              <div key={id} className={WIDGET_SPAN[id]}>
-                <SortableCard id={id}>
-                  {WIDGET_COMPONENTS[id]}
-                </SortableCard>
-              </div>
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-
-      {/* Hidden reference to avoid lint warning on CHART_COLORS */}
-      <span className="hidden">{CHART_COLORS[0]}</span>
+      <FilialBars />
     </div>
   )
 }

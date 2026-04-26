@@ -24,9 +24,9 @@ describe('KpiCard', () => {
   })
 
   it.each([
-    ['green', 'bg-primary-50'],
-    ['blue', 'bg-blue-50'],
-    ['red', 'bg-red-50'],
+    ['green', 'bg-primary-100'],
+    ['blue',  'bg-primary-100'],
+    ['red',   'bg-red-50'],
     ['amber', 'bg-amber-50'],
   ] as const)('applies %s accent class', (accent, expectedClass) => {
     const { container } = render(
@@ -35,8 +35,8 @@ describe('KpiCard', () => {
     expect(container.querySelector(`.${expectedClass}`)).toBeTruthy()
   })
 
-  it('defaults to green accent', () => {
+  it('defaults to primary accent', () => {
     const { container } = render(<KpiCard label="X" value="Y" icon={<span />} />)
-    expect(container.querySelector('.bg-primary-50')).toBeTruthy()
+    expect(container.querySelector('.bg-primary-100')).toBeTruthy()
   })
 })
