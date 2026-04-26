@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useUrlState } from '../hooks/useUrlState'
 import { FlaskConical } from 'lucide-react'
 import { branches, BUSINESS_LINES } from '../data/mockData'
 import { SERVICE_SECTORS } from '../constants'
@@ -101,7 +102,7 @@ function ComparisonBars({
 }
 
 export default function ScenarioPage() {
-  const [sectorFilter, setSectorFilter] = useState('Todos')
+  const [sectorFilter, setSectorFilter] = useUrlState('scn_sector', 'Todos')
 
   const [cbsA,     setCbsA]     = useState(DEFAULTS_A.cbs)
   const [ibsBensA, setIbsBensA] = useState(DEFAULTS_A.ibsBens)

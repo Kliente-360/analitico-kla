@@ -1,7 +1,9 @@
-import { lazy, Suspense, useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../i18n'
 import {
   BarChart3, Table2, FlaskConical, PieChart, MapPin, TrendingUp, Database,
-  Loader2, LogOut, ChevronLeft, ChevronRight, Download, Moon, Sun, Bell, Menu, X,
+  Loader2, LogOut, ChevronLeft, ChevronRight, Download, Moon, Sun, Bell, Menu, X, Languages,
 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useThemeStore } from '../store/themeStore'
@@ -30,19 +32,18 @@ const PAGES: Record<TabId, React.LazyExoticComponent<() => React.ReactElement>> 
   rawdata:   RawDataPage,
 }
 
-const NAV_ITEMS: { id: TabId; label: string; shortLabel: string; icon: React.ReactNode; badge?: string }[] = [
-  { id: 'dashboard', label: 'Visão Executiva',          shortLabel: 'Visão',      icon: <BarChart3    size={16} strokeWidth={1.5} /> },
-  { id: 'pivot',     label: 'Análise Multidimensional', shortLabel: 'Pivot',      icon: <Table2       size={16} strokeWidth={1.5} /> },
-  { id: 'scenario',  label: 'Simulação de Cenários',    shortLabel: 'Simulação',  icon: <FlaskConical size={16} strokeWidth={1.5} />, badge: 'novo' },
-  { id: 'sector',    label: 'Linha de Negócio',         shortLabel: 'Setor',      icon: <PieChart     size={16} strokeWidth={1.5} /> },
-  { id: 'regional',  label: 'Por Filial / UF',          shortLabel: 'Regional',   icon: <MapPin       size={16} strokeWidth={1.5} /> },
-  { id: 'trends',    label: 'Tendência 2026–2033',      shortLabel: 'Tendências', icon: <TrendingUp   size={16} strokeWidth={1.5} /> },
-  { id: 'rawdata',   label: 'Dados Brutos',             shortLabel: 'Dados',      icon: <Database     size={16} strokeWidth={1.5} /> },
+const NAV_IDS: { id: TabId; icon: React.ReactNode; badge?: string }[] = [
+  { id: 'dashboard', icon: <BarChart3    size={16} strokeWidth={1.5} /> },
+  { id: 'pivot',     icon: <Table2       size={16} strokeWidth={1.5} /> },
+  { id: 'scenario',  icon: <FlaskConical size={16} strokeWidth={1.5} />, badge: 'novo' },
+  { id: 'sector',    icon: <PieChart     size={16} strokeWidth={1.5} /> },
+  { id: 'regional',  icon: <MapPin       size={16} strokeWidth={1.5} /> },
+  { id: 'trends',    icon: <TrendingUp   size={16} strokeWidth={1.5} /> },
+  { id: 'rawdata',   icon: <Database     size={16} strokeWidth={1.5} /> },
 ]
 
 // 4 items shown in the mobile bottom tab bar
 const BOTTOM_TAB_IDS: TabId[] = ['dashboard', 'scenario', 'sector', 'rawdata']
-const BOTTOM_TAB_ITEMS = NAV_ITEMS.filter((n) => BOTTOM_TAB_IDS.includes(n.id))
 
 function PageLoader() {
   return (
@@ -76,13 +77,62 @@ function NotificationDot() {
   )
 }
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])'
+
+function useFocusTrap(active: boolean) {
+  const ref = useRef<HTMLElement>(null)
+  const onKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!active || e.key !== 'Tab') return
+    const el = ref.current
+    if (!el) return
+    const nodes = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE))
+    if (nodes.length === 0) return
+    const first = nodes[0], last = nodes[nodes.length - 1]
+    if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus() } }
+    else            { if (document.activeElement === last)  { e.preventDefault(); first.focus() } }
+  }, [active])
+
+  useEffect(() => {
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onKeyDown])
+
+  return ref
+}
+
+function LangToggle() {
+  const { t } = useTranslation()
+  const [, forceUpdate] = useState(0)
+  function toggle() {
+    const next = i18n.language === 'pt-BR' ? 'en-US' : 'pt-BR'
+    i18n.changeLanguage(next)
+    localStorage.setItem('lang', next)
+    forceUpdate((n) => n + 1)
+  }
+  return (
+    <button onClick={toggle} aria-label="Switch language" title={t('lang_switch')} className="btn-ghost p-2 hidden sm:flex items-center gap-1">
+      <Languages size={15} />
+      <span className="text-xs hidden lg:inline">{t('lang_switch')}</span>
+    </button>
+  )
+}
+
 export default function Layout() {
   const [activeTab,    setActiveTab]    = useState<TabId>('dashboard')
   const [collapsed,    setCollapsed]    = useState(false)
   const [mobileMenuOpen, setMobileMenu] = useState(false)
   const { user, logout }               = useAuthStore()
   const { darkMode, toggleDarkMode }   = useThemeStore()
+  const { t } = useTranslation()
   const Page = PAGES[activeTab]
+  const mobileNavRef = useFocusTrap(mobileMenuOpen) as React.RefObject<HTMLElement>
+
+  const NAV_ITEMS = NAV_IDS.map((n) => ({
+    ...n,
+    label:      t(`nav.${n.id}`),
+    shortLabel: t(`nav_short.${n.id}`),
+  }))
+  const BOTTOM_TAB_ITEMS = NAV_ITEMS.filter((n) => BOTTOM_TAB_IDS.includes(n.id))
 
   // Auto-collapse sidebar on tablet (640–1024px)
   useEffect(() => {
@@ -99,6 +149,25 @@ export default function Layout() {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light')
   }, [darkMode])
 
+  // Focus first item when mobile menu opens; restore on close
+  const lastFocusRef = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      lastFocusRef.current = document.activeElement as HTMLElement
+      const first = mobileNavRef.current?.querySelector<HTMLElement>(FOCUSABLE)
+      first?.focus()
+    } else {
+      lastFocusRef.current?.focus()
+    }
+  }, [mobileMenuOpen, mobileNavRef])
+
+  // Close mobile menu on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && mobileMenuOpen) setMobileMenu(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [mobileMenuOpen])
+
   // Close mobile menu on tab change
   function navigate(id: TabId) {
     setActiveTab(id)
@@ -108,6 +177,14 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-ink-50 flex">
 
+      {/* ── Skip-to-content ──────────────────────────────────────────────── */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary-700 focus:text-white focus:rounded focus:text-sm focus:font-medium"
+      >
+        {t('skip_link')}
+      </a>
+
       {/* ── Mobile overlay menu ─────────────────────────────────────────── */}
       {mobileMenuOpen && (
         <div
@@ -115,12 +192,18 @@ export default function Layout() {
           onClick={() => setMobileMenu(false)}
         />
       )}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-paper border-r border-ink-200
-        flex flex-col transition-transform duration-200
-        sm:hidden
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      <aside
+        ref={mobileNavRef as React.RefObject<HTMLElement>}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu de navegação"
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-paper border-r border-ink-200
+          flex flex-col transition-transform duration-200
+          sm:hidden
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
         <div className="flex items-center justify-between px-4 py-4 border-b border-ink-100">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-primary-700 rounded-lg flex items-center justify-center">
@@ -275,17 +358,21 @@ export default function Layout() {
 
           <NotificationDot />
 
+          <LangToggle />
+
           <button
             onClick={toggleDarkMode}
-            aria-label={darkMode ? 'Modo claro' : 'Modo escuro'}
+            aria-label={darkMode ? t('topbar.light_mode') : t('topbar.dark_mode')}
             className="btn-ghost p-2"
           >
             {darkMode ? <Sun size={16} /> : <Moon size={16} />}
           </button>
 
-          <Suspense fallback={null}>
-            <ExportPdfButton />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={null}>
+              <ExportPdfButton />
+            </Suspense>
+          </ErrorBoundary>
 
           <button
             onClick={() => window.print()}
@@ -309,7 +396,7 @@ export default function Layout() {
         </header>
 
         {/* Page — key forces remount + page-enter animation on tab change */}
-        <main className="flex-1 px-3 sm:px-6 py-4 sm:py-6 min-w-0 pb-20 sm:pb-6">
+        <main id="main-content" className="flex-1 px-3 sm:px-6 py-4 sm:py-6 min-w-0 pb-20 sm:pb-6">
           <ErrorBoundary>
             <Suspense fallback={<PageLoader />}>
               <div key={activeTab} className="page-enter">

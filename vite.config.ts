@@ -20,12 +20,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/__tests__/setup.ts'],
+    exclude: ['node_modules', 'dist', 'e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/__tests__/**', 'src/main.tsx', 'src/data/**'],
-      thresholds: { lines: 50, branches: 50 },
+      thresholds: { lines: 70, statements: 68, branches: 53, functions: 68 },
     },
   },
 })

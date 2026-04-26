@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
+import { useUrlState } from '../hooks/useUrlState'
 import {
   ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
@@ -16,8 +17,8 @@ interface LineStats {
 }
 
 export default function SectorPage() {
-  const [regionFilter, setRegionFilter] = useState('Todos')
-  const [sizeFilter,   setSizeFilter]   = useState('Todos')
+  const [regionFilter, setRegionFilter] = useUrlState('sec_region', 'Todos')
+  const [sizeFilter,   setSizeFilter]   = useUrlState('sec_size', 'Todos')
 
   const filtered = useMemo(() =>
     branches.filter((b) =>

@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "dashboard":  "Visão Executiva",
+    "pivot":      "Análise Multidimensional",
+    "scenario":   "Simulação de Cenários",
+    "sector":     "Linha de Negócio",
+    "regional":   "Por Filial / UF",
+    "trends":     "Tendência 2026–2033",
+    "rawdata":    "Dados Brutos"
+  },
+  "nav_short": {
+    "dashboard":  "Visão",
+    "pivot":      "Pivot",
+    "scenario":   "Simulação",
+    "sector":     "Setor",
+    "regional":   "Regional",
+    "trends":     "Tendências",
+    "rawdata":    "Dados"
+  },
+  "topbar": {
+    "period":       "Período",
+    "notifications":"Notificações",
+    "dark_mode":    "Modo escuro",
+    "light_mode":   "Modo claro",
+    "export":       "Exportar",
+    "logout":       "Sair",
+    "open_menu":    "Abrir menu",
+    "close_menu":   "Fechar menu",
+    "more_pages":   "Mais",
+    "expand_menu":  "Expandir menu",
+    "collapse_menu":"Recolher menu"
+  },
+  "cta": {
+    "title":  "Dúvidas tributárias?",
+    "body":   "Fale com um consultor Kliente 360."
+  },
+  "skip_link": "Ir para o conteúdo principal",
+  "lang_switch": "English"
+}
