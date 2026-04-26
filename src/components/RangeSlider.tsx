@@ -17,7 +17,7 @@ export function RangeSlider({
   const [prevValue, setPrevValue] = useState(value)
   const timer = useRef<ReturnType<typeof setTimeout>>()
 
-  // Sync when parent resets (e.g. "resetar cenário") — React-approved during-render update
+  // Sync when parent resets — React-approved during-render update
   if (prevValue !== value) {
     setPrevValue(value)
     setLocal(value)
@@ -30,9 +30,16 @@ export function RangeSlider({
     timer.current = setTimeout(() => onChange(v), 150)
   }
 
+  // Bicolor track fill: filled portion = color, unfilled = --ink-200
+  const pct = max > min ? ((local - min) / (max - min)) * 100 : 0
+  const trackStyle = {
+    '--slider-color': color,
+    background: `linear-gradient(to right, ${color} ${pct}%, var(--ink-200, #dadde2) ${pct}%)`,
+  } as React.CSSProperties
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-2">
         <label className="text-sm font-medium text-ink-700">{label}</label>
         <span className="text-sm font-bold tabular-nums" style={{ color }}>
           {local.toFixed(1)}%
@@ -42,10 +49,10 @@ export function RangeSlider({
         type="range"
         min={min} max={max} step={step} value={local}
         onChange={handleChange}
-        className="w-full h-2 rounded-full appearance-none cursor-pointer"
-        style={{ accentColor: color }}
+        className="w-full cursor-pointer"
+        style={trackStyle}
       />
-      <div className="flex justify-between text-xs text-ink-400 mt-0.5">
+      <div className="flex justify-between text-xs text-ink-400 mt-1">
         <span>{min}%</span>
         <span>{max}%</span>
       </div>
