@@ -40,7 +40,7 @@ const bestReduction = [...branches].sort((a, b) => a.taxDeltaPercent - b.taxDelt
 function HeroImpact() {
   const barMax = Math.max(totalCurrent, totalReform)
   return (
-    <div className="rounded-xl bg-primary-700 text-white p-6 sm:p-8">
+    <div className="rounded-xl bg-ink-900 text-white p-6 sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-3">
         Impacto da Reforma Tributária · {TENANT.fiscalYear}
       </p>

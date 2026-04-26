@@ -132,38 +132,66 @@ describe('ScenarioPage', () => {
 })
 
 describe('SectorPage', () => {
-  it('renders sector filter', () => {
+  it('renders line-of-business heading', () => {
     render(<SectorPage />)
-    expect(screen.getAllByText(/Setor/).length).toBeGreaterThan(0)
+    expect(screen.getByText('Por Linha de Negócio')).toBeInTheDocument()
   })
 
-  it('renders Peer Benchmark section', () => {
+  it('renders micro-bars section', () => {
     render(<SectorPage />)
-    expect(screen.getByText(/Benchmark/)).toBeInTheDocument()
+    expect(screen.getByText('Carga por linha de negócio')).toBeInTheDocument()
+  })
+
+  it('renders summary table', () => {
+    render(<SectorPage />)
+    expect(screen.getByText('Resumo por linha de negócio')).toBeInTheDocument()
+  })
+
+  it('filters by region', () => {
+    render(<SectorPage />)
+    const selects = screen.getAllByRole('combobox')
+    fireEvent.change(selects[0], { target: { value: 'Sul' } })
+    expect(screen.getByText(/filiais selecionadas/)).toBeInTheDocument()
   })
 })
 
 describe('RegionalPage', () => {
-  it('renders region heading', () => {
+  it('renders filial/UF heading', () => {
     render(<RegionalPage />)
-    expect(screen.getByText(/Regional/i)).toBeInTheDocument()
+    expect(screen.getByText('Por Filial / UF')).toBeInTheDocument()
   })
 
   it('renders filter controls', () => {
     render(<RegionalPage />)
     expect(screen.getAllByRole('combobox').length).toBeGreaterThan(0)
   })
+
+  it('renders state detail table', () => {
+    render(<RegionalPage />)
+    expect(screen.getByText('Detalhamento por estado')).toBeInTheDocument()
+  })
 })
 
 describe('TrendPage', () => {
   it('renders timeline heading', () => {
     render(<TrendPage />)
-    expect(screen.getByText(/Tendências|Trajetória/i)).toBeInTheDocument()
+    expect(screen.getByText(/Tendências/i)).toBeInTheDocument()
   })
 
   it('renders phase milestone years', () => {
     render(<TrendPage />)
-    expect(screen.getByText(/2026/)).toBeInTheDocument()
+    expect(screen.getAllByText(/2026/).length).toBeGreaterThan(0)
+  })
+
+  it('renders callout economia card', () => {
+    render(<TrendPage />)
+    expect(screen.getByText(/Economia acumulada/i)).toBeInTheDocument()
+  })
+
+  it('switches to line view', () => {
+    render(<TrendPage />)
+    fireEvent.click(screen.getByText('Linha'))
+    expect(screen.getByText('Área')).toBeInTheDocument()
   })
 })
 
@@ -181,7 +209,7 @@ describe('RawDataPage', () => {
   it('renders column headers', () => {
     render(<RawDataPage />)
     expect(screen.getByText('Empresa')).toBeInTheDocument()
-    expect(screen.getAllByText('Setor').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Setor|setor/i).length).toBeGreaterThan(0)
   })
 })
 

@@ -2,15 +2,13 @@ import { useState, useMemo, useCallback, useRef } from 'react'
 import { Download, Search, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import Papa from 'papaparse'
-import { companies, SECTORS, STATES, SIZES } from '../data/mockData'
+import { branches, BUSINESS_LINES, STATES, SIZES } from '../data/mockData'
 import { fmtM, fmtPct } from '../utils/formatters'
 import { useTableFilter } from '../hooks/useTableFilter'
-import { usePageReady } from '../hooks/usePageReady'
-import { SkeletonTable, SkeletonControls } from '../components/Skeleton'
-import type { Company } from '../types'
+import type { Branch } from '../types'
 
 interface ColDef {
-  key: keyof Company
+  key: keyof Branch
   label: string
   fmt?: (v: number | string) => string
   align?: 'left' | 'right'
@@ -41,26 +39,25 @@ const COLUMNS: ColDef[] = [
   { key: 'taxDeltaPercent',      label: 'Δ %',            align: 'right', fmt: (v) => fmtPct(Number(v)) },
 ]
 
-type SortKey = keyof Company
+type SortKey = keyof Branch
 interface Filters { sector: string; state: string; size: string; search: string }
 
 const ROW_HEIGHT = 36
 
 export default function RawDataPage() {
-  const ready = usePageReady()
   const [filters, setFilters] = useState<Filters>({ sector: 'Todos', state: 'Todos', size: 'Todos', search: '' })
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [visibleCols, setVisibleCols] = useState<Set<keyof Company>>(new Set(COLUMNS.map((c) => c.key)))
+  const [visibleCols, setVisibleCols] = useState<Set<keyof Branch>>(new Set(COLUMNS.map((c) => c.key)))
   const [showColPicker, setShowColPicker] = useState(false)
   const tableContainerRef = useRef<HTMLDivElement>(null)
 
-  const setSector = useCallback((v: string) => setFilters((p) => ({ ...p, sector: v })), [])
+  const setSector   = useCallback((v: string) => setFilters((p) => ({ ...p, sector: v })), [])
   const setStateFlt = useCallback((v: string) => setFilters((p) => ({ ...p, state: v })), [])
-  const setSizeFlt = useCallback((v: string) => setFilters((p) => ({ ...p, size: v })), [])
-  const setSearch = useCallback((v: string) => setFilters((p) => ({ ...p, search: v })), [])
+  const setSizeFlt  = useCallback((v: string) => setFilters((p) => ({ ...p, size: v })), [])
+  const setSearch   = useCallback((v: string) => setFilters((p) => ({ ...p, search: v })), [])
 
-  const filtered = useTableFilter(companies, {
+  const filtered = useTableFilter(branches, {
     sector: filters.sector,
     state:  filters.state,
     size:   filters.size,
@@ -69,8 +66,8 @@ export default function RawDataPage() {
 
   const sorted = useMemo(() =>
     [...filtered].sort((a, b) => {
-      const av = a[sortKey]
-      const bv = b[sortKey]
+      const av  = a[sortKey]
+      const bv  = b[sortKey]
       const cmp = typeof av === 'number' ? av - (bv as number) : String(av).localeCompare(String(bv))
       return sortDir === 'asc' ? cmp : -cmp
     }),
@@ -92,13 +89,13 @@ export default function RawDataPage() {
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const url  = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = url
+    link.href     = url
     link.download = `analitico-kla-dados-${new Date().toISOString().slice(0, 10)}.csv`
     link.click()
     URL.revokeObjectURL(url)
   }, [sorted])
 
-  const toggleCol = useCallback((key: keyof Company) => {
+  const toggleCol = useCallback((key: keyof Branch) => {
     setVisibleCols((prev) => {
       const next = new Set(prev)
       if (next.has(key)) next.delete(key)
@@ -110,10 +107,10 @@ export default function RawDataPage() {
   const visibleColDefs = COLUMNS.filter((c) => visibleCols.has(c.key))
 
   const rowVirtualizer = useVirtualizer({
-    count: sorted.length,
+    count:           sorted.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: 15,
+    estimateSize:    () => ROW_HEIGHT,
+    overscan:        15,
   })
 
   const virtualItems = rowVirtualizer.getVirtualItems()
@@ -123,61 +120,55 @@ export default function RawDataPage() {
     return sortDir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
   }
 
-  if (!ready) {
-    return (
-      <div className="space-y-5">
-        <div>
-          <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-1" />
-          <div className="h-4 w-64 bg-gray-200 rounded animate-pulse" />
-        </div>
-        <SkeletonControls />
-        <SkeletonTable rows={8} />
-      </div>
-    )
-  }
+  const activeFilterCount = [
+    filters.sector !== 'Todos',
+    filters.state  !== 'Todos',
+    filters.size   !== 'Todos',
+    filters.search !== '',
+  ].filter(Boolean).length
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-bold text-gray-900">Dados Brutos</h2>
-        <p className="text-sm text-gray-500">Explore todos os dados e exporte para CSV.</p>
+        <h2 className="text-lg font-bold text-ink-900">Dados Brutos</h2>
+        <p className="text-sm text-ink-500">Explore todas as filiais e exporte para CSV.</p>
       </div>
 
       {/* Controls */}
       <div className="card p-4 print:hidden">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
             <input
               type="text"
               value={filters.search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar empresa, setor, estado..."
+              placeholder="Buscar filial, setor, estado..."
               className="input-field pl-9 pr-8"
             />
             {filters.search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-700">
                 <X size={14} />
               </button>
             )}
           </div>
 
           <div className="w-44">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Setor</label>
+            <label className="block text-xs font-semibold text-ink-500 uppercase tracking-wide mb-1">Setor</label>
             <select className="select-field" value={filters.sector} onChange={(e) => setSector(e.target.value)}>
               <option>Todos</option>
-              {SECTORS.map((s) => <option key={s}>{s}</option>)}
+              {BUSINESS_LINES.map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div className="w-32">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Estado</label>
+            <label className="block text-xs font-semibold text-ink-500 uppercase tracking-wide mb-1">Estado</label>
             <select className="select-field" value={filters.state} onChange={(e) => setStateFlt(e.target.value)}>
               <option>Todos</option>
               {STATES.map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div className="w-36">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Porte</label>
+            <label className="block text-xs font-semibold text-ink-500 uppercase tracking-wide mb-1">Porte</label>
             <select className="select-field" value={filters.size} onChange={(e) => setSizeFlt(e.target.value)}>
               <option>Todos</option>
               {SIZES.map((s) => <option key={s}>{s}</option>)}
@@ -187,13 +178,18 @@ export default function RawDataPage() {
           <div className="relative">
             <button onClick={() => setShowColPicker((v) => !v)} className="btn-secondary text-sm">
               Colunas
+              {visibleColDefs.length < COLUMNS.length && (
+                <span className="ml-1 text-[11px] text-primary-700 font-semibold">
+                  {visibleColDefs.length}/{COLUMNS.length}
+                </span>
+              )}
             </button>
             {showColPicker && (
-              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-20 w-64">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Colunas visíveis</p>
+              <div className="absolute right-0 top-full mt-1 bg-paper border border-ink-200 rounded-xl shadow-xl p-4 z-20 w-64">
+                <p className="text-xs font-semibold text-ink-500 uppercase tracking-wide mb-3">Colunas visíveis</p>
                 <div className="grid grid-cols-2 gap-1 max-h-64 overflow-y-auto">
                   {COLUMNS.map((col) => (
-                    <label key={String(col.key)} className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer py-1">
+                    <label key={String(col.key)} className="flex items-center gap-2 text-xs text-ink-700 cursor-pointer py-1">
                       <input type="checkbox" checked={visibleCols.has(col.key)} onChange={() => toggleCol(col.key)} className="accent-primary-700" />
                       {col.label}
                     </label>
@@ -209,18 +205,21 @@ export default function RawDataPage() {
           </button>
         </div>
 
-        <div className="mt-3 text-xs text-gray-400">
-          {sorted.length} de {companies.length} empresas · {visibleColDefs.length} colunas visíveis
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-400">
+          <span>{sorted.length} de {branches.length} filiais</span>
+          {activeFilterCount > 0 && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 font-medium text-[11px]">
+              {activeFilterCount} filtro{activeFilterCount > 1 ? 's' : ''} ativo{activeFilterCount > 1 ? 's' : ''}
+            </span>
+          )}
+          <span className="text-ink-300">·</span>
+          <span>{visibleColDefs.length} colunas visíveis</span>
         </div>
       </div>
 
       {/* Virtualized Table */}
       <div className="card overflow-hidden">
-        <div
-          ref={tableContainerRef}
-          className="overflow-auto"
-          style={{ maxHeight: '520px' }}
-        >
+        <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: '520px' }}>
           <table className="w-full text-sm whitespace-nowrap">
             <thead className="sticky top-0 z-10">
               <tr className="bg-primary-700 text-white text-xs">
@@ -241,35 +240,37 @@ export default function RawDataPage() {
             <tbody style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
               {sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={visibleColDefs.length} className="text-center py-12 text-gray-400">
-                    Nenhuma empresa encontrada com os filtros selecionados.
+                  <td colSpan={visibleColDefs.length} className="text-center py-12 text-ink-400">
+                    Nenhuma filial encontrada com os filtros selecionados.
                   </td>
                 </tr>
               ) : (
                 virtualItems.map((virtualRow) => {
-                  const c = sorted[virtualRow.index]
+                  const c  = sorted[virtualRow.index]
                   const ri = virtualRow.index
                   return (
                     <tr
                       key={c.id}
                       style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: `${virtualRow.size}px`,
+                        position:  'absolute',
+                        top:       0,
+                        left:      0,
+                        width:     '100%',
+                        height:    `${virtualRow.size}px`,
                         transform: `translateY(${virtualRow.start}px)`,
                       }}
-                      className={`${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-primary-50 transition-colors`}
+                      className={`${ri % 2 === 0 ? 'bg-paper' : 'bg-ink-50'} hover:bg-primary-100 transition-colors`}
                     >
                       {visibleColDefs.map((col) => {
-                        const raw     = c[col.key]
-                        const val     = col.fmt ? col.fmt(raw as number | string) : String(raw)
-                        const isDelta = col.key === 'taxDelta' || col.key === 'taxDeltaPercent'
-                        const numRaw  = typeof raw === 'number' ? raw : 0
-                        const deltaClass = isDelta ? (numRaw < 0 ? 'text-green-700 font-medium' : numRaw > 0 ? 'text-red-700 font-medium' : '') : ''
+                        const raw      = c[col.key]
+                        const val      = col.fmt ? col.fmt(raw as number | string) : String(raw)
+                        const isDelta  = col.key === 'taxDelta' || col.key === 'taxDeltaPercent'
+                        const numRaw   = typeof raw === 'number' ? raw : 0
+                        const deltaClass = isDelta
+                          ? (numRaw < 0 ? 'text-accent-down font-medium' : numRaw > 0 ? 'text-accent-up font-medium' : '')
+                          : ''
                         return (
-                          <td key={String(col.key)} className={`px-3 py-2 ${col.align === 'right' ? 'text-right' : ''} ${deltaClass || 'text-gray-700'}`}>
+                          <td key={String(col.key)} className={`px-3 py-2 ${col.align === 'right' ? 'text-right' : ''} ${deltaClass || 'text-ink-700'}`}>
                             {val}
                           </td>
                         )
@@ -282,11 +283,11 @@ export default function RawDataPage() {
           </table>
         </div>
 
-        <div className="bg-gray-50 border-t border-gray-200 px-4 py-3 flex flex-wrap gap-6 text-xs text-gray-500">
-          <span>Receita total: <strong className="text-gray-700">{fmtM(sorted.reduce((s, c) => s + c.revenue, 0))}</strong></span>
-          <span>Impostos atuais: <strong className="text-gray-700">{fmtM(sorted.reduce((s, c) => s + c.totalTaxCurrent, 0))}</strong></span>
-          <span>Impostos reforma: <strong className="text-gray-700">{fmtM(sorted.reduce((s, c) => s + c.totalTaxReform, 0))}</strong></span>
-          <span>Funcionários: <strong className="text-gray-700">{sorted.reduce((s, c) => s + c.employees, 0).toLocaleString('pt-BR')}</strong></span>
+        <div className="bg-ink-50 border-t border-ink-200 px-4 py-3 flex flex-wrap gap-6 text-xs text-ink-500">
+          <span>Receita total: <strong className="text-ink-900">{fmtM(sorted.reduce((s, c) => s + c.revenue, 0))}</strong></span>
+          <span>Impostos atuais: <strong className="text-ink-900">{fmtM(sorted.reduce((s, c) => s + c.totalTaxCurrent, 0))}</strong></span>
+          <span>Impostos reforma: <strong className="text-ink-900">{fmtM(sorted.reduce((s, c) => s + c.totalTaxReform, 0))}</strong></span>
+          <span>Colaboradores: <strong className="text-ink-900">{sorted.reduce((s, c) => s + c.employees, 0).toLocaleString('pt-BR')}</strong></span>
         </div>
       </div>
     </div>
