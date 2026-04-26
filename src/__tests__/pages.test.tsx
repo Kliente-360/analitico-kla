@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { vi } from 'vitest'
 
 vi.mock('../hooks/usePageReady', () => ({ usePageReady: () => true }))
@@ -51,6 +51,7 @@ import SectorPage     from '../pages/SectorPage'
 import RegionalPage   from '../pages/RegionalPage'
 import TrendPage      from '../pages/TrendPage'
 import RawDataPage    from '../pages/RawDataPage'
+import LoginPage      from '../pages/LoginPage'
 
 describe('DashboardPage', () => {
   it('renders KPI cards', () => {
@@ -89,12 +90,27 @@ describe('PivotTablePage', () => {
 describe('ScenarioPage', () => {
   it('renders CBS slider', () => {
     render(<ScenarioPage />)
-    expect(screen.getByText(/CBS/)).toBeInTheDocument()
+    expect(screen.getAllByText(/CBS/).length).toBeGreaterThan(0)
   })
 
-  it('renders compare mode toggle', () => {
+  it('renders compare mode toggle button', () => {
     render(<ScenarioPage />)
-    expect(screen.getByText(/Comparar/)).toBeInTheDocument()
+    expect(screen.getByText(/Comparar dois cenários/)).toBeInTheDocument()
+  })
+
+  it('activates compare mode when toggle is clicked', () => {
+    render(<ScenarioPage />)
+    const btn = screen.getByText(/Comparar dois cenários/)
+    fireEvent.click(btn)
+    expect(screen.getByText(/Modo Comparação ativado/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Cenário A/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Cenário B/).length).toBeGreaterThan(0)
+  })
+
+  it('shows simulation results summary cards', () => {
+    render(<ScenarioPage />)
+    expect(screen.getByText('Regime Atual')).toBeInTheDocument()
+    expect(screen.getByText('Reforma Oficial')).toBeInTheDocument()
   })
 })
 
@@ -149,5 +165,31 @@ describe('RawDataPage', () => {
     render(<RawDataPage />)
     expect(screen.getByText('Empresa')).toBeInTheDocument()
     expect(screen.getAllByText('Setor').length).toBeGreaterThan(0)
+  })
+})
+
+describe('LoginPage', () => {
+  it('renders email and password fields', () => {
+    render(<LoginPage />)
+    expect(screen.getByLabelText('E-mail')).toBeInTheDocument()
+    expect(screen.getByLabelText('Senha')).toBeInTheDocument()
+  })
+
+  it('renders login button', () => {
+    render(<LoginPage />)
+    expect(screen.getByRole('button', { name: /entrar/i })).toBeInTheDocument()
+  })
+
+  it('toggles password visibility', () => {
+    render(<LoginPage />)
+    const toggle = screen.getByLabelText(/mostrar senha/i)
+    fireEvent.click(toggle)
+    expect(screen.getByLabelText(/ocultar senha/i)).toBeInTheDocument()
+  })
+
+  it('fills credentials on demo row click', () => {
+    render(<LoginPage />)
+    fireEvent.click(screen.getAllByText(/admin@kliente360.com/)[0])
+    expect((screen.getByLabelText('E-mail') as HTMLInputElement).value).toBe('admin@kliente360.com')
   })
 })
