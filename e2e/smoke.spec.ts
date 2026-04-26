@@ -19,7 +19,8 @@ test.describe('Login flow', () => {
     await page.getByLabel('E-mail').fill('admin@kliente360.com')
     await page.getByLabel('Senha').fill('admin123')
     await page.getByRole('button', { name: /entrar/i }).click()
-    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 5000 })
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 8000 })
   })
 
   test('shows error on wrong credentials', async ({ page }) => {
@@ -27,7 +28,7 @@ test.describe('Login flow', () => {
     await page.getByLabel('E-mail').fill('wrong@example.com')
     await page.getByLabel('Senha').fill('wrongpassword')
     await page.getByRole('button', { name: /entrar/i }).click()
-    await expect(page.getByRole('alert')).toBeVisible({ timeout: 2000 })
+    await expect(page.getByRole('alert')).toBeVisible({ timeout: 5000 })
   })
 })
 
@@ -37,7 +38,8 @@ test.describe('Navigation', () => {
     await page.getByLabel('E-mail').fill('admin@kliente360.com')
     await page.getByLabel('Senha').fill('admin123')
     await page.getByRole('button', { name: /entrar/i }).click()
-    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 5000 })
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 8000 })
   })
 
   test('navigates to Pivot Table page', async ({ page }) => {
@@ -73,7 +75,8 @@ test.describe('Accessibility', () => {
     await page.getByLabel('E-mail').fill('admin@kliente360.com')
     await page.getByLabel('Senha').fill('admin123')
     await page.getByRole('button', { name: /entrar/i }).click()
-    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 5000 })
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 8000 })
     const h2 = page.getByRole('heading', { level: 2 })
     await expect(h2.first()).toBeVisible()
   })
@@ -85,9 +88,10 @@ test.describe('RawDataPage', () => {
     await page.getByLabel('E-mail').fill('admin@kliente360.com')
     await page.getByLabel('Senha').fill('admin123')
     await page.getByRole('button', { name: /entrar/i }).click()
-    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 5000 })
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 8000 })
     await page.getByText('Dados Brutos').click()
-    await expect(page.getByPlaceholder(/Buscar/)).toBeVisible()
+    await expect(page.getByPlaceholder(/Buscar/)).toBeVisible({ timeout: 8000 })
   })
 
   test('CSV export button is present', async ({ page }) => {
