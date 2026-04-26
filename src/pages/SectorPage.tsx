@@ -2,9 +2,11 @@ import { useState, useMemo } from 'react'
 import {
   ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
+import { PieChart as PieChartIcon } from 'lucide-react'
 import { branches, BUSINESS_LINES, REGIONS, SIZES } from '../data/mockData'
 import { BUSINESS_LINE_COLORS } from '../constants'
 import { fmtM } from '../utils/formatters'
+import { EmptyState } from '../components/EmptyState'
 
 interface LineStats {
   name: string; color: string
@@ -67,6 +69,16 @@ export default function SectorPage() {
         <h2 className="text-lg font-bold text-ink-900">Por Linha de Negócio</h2>
         <p className="text-sm text-ink-500">Receita, carga tributária e impacto da reforma por segmento.</p>
       </div>
+      {filtered.length === 0 && (
+        <div className="card">
+          <EmptyState
+            icon={<PieChartIcon size={32} />}
+            title="Nenhuma filial encontrada"
+            body="Ajuste os filtros de região ou porte para ver resultados."
+          />
+        </div>
+      )}
+      {filtered.length === 0 ? null : (<>
 
       {/* Filters */}
       <div className="card p-3 sm:p-4 print:hidden">
@@ -231,6 +243,7 @@ export default function SectorPage() {
           </table>
         </div>
       </div>
+      </>)}
     </div>
   )
 }

@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
 import { Treemap, Cell, ResponsiveContainer } from 'recharts'
+import { MapPin } from 'lucide-react'
 import { branches, BUSINESS_LINES, SIZES, STATE_REGION } from '../data/mockData'
 import { REGION_COLORS } from '../constants'
 import { fmtM } from '../utils/formatters'
+import { EmptyState } from '../components/EmptyState'
 
 function TreemapTile(props: {
   x?: number; y?: number; width?: number; height?: number
@@ -121,8 +123,18 @@ export default function RegionalPage() {
         </div>
       </div>
 
+      {filtered.length === 0 && (
+        <div className="card">
+          <EmptyState
+            icon={<MapPin size={32} />}
+            title="Nenhuma filial encontrada"
+            body="Ajuste os filtros de segmento ou porte para ver resultados."
+          />
+        </div>
+      )}
+
       {/* Treemap + UF bars */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {filtered.length > 0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {/* Treemap */}
         <div className="card p-5">
@@ -177,10 +189,10 @@ export default function RegionalPage() {
             <span className="flex items-center gap-1.5"><span className="inline-block w-4 h-2 rounded-sm bg-ink-300" />Reforma</span>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* State table */}
-      <div className="card p-5">
+      {filtered.length > 0 && <div className="card p-5">
         <h3 className="text-sm font-semibold text-ink-900 mb-4">Detalhamento por estado</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -223,7 +235,7 @@ export default function RegionalPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

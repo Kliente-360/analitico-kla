@@ -1,10 +1,11 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
-import { Download, Search, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Download, Search, X, ArrowUpDown, ArrowUp, ArrowDown, Database } from 'lucide-react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import Papa from 'papaparse'
 import { branches, BUSINESS_LINES, STATES, SIZES } from '../data/mockData'
 import { fmtM, fmtPct } from '../utils/formatters'
 import { useTableFilter } from '../hooks/useTableFilter'
+import { EmptyState } from '../components/EmptyState'
 import type { Branch } from '../types'
 
 interface ColDef {
@@ -217,8 +218,18 @@ export default function RawDataPage() {
         </div>
       </div>
 
+      {sorted.length === 0 && (
+        <div className="card">
+          <EmptyState
+            icon={<Database size={28} />}
+            title="Nenhuma filial encontrada"
+            body="Tente outro termo de busca ou remova filtros ativos."
+          />
+        </div>
+      )}
+
       {/* Virtualized Table */}
-      <div className="card overflow-hidden">
+      {sorted.length > 0 && <div className="card overflow-hidden">
         <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: '520px' }}>
           <table className="w-full text-sm whitespace-nowrap">
             <thead className="sticky top-0 z-10">
@@ -238,14 +249,7 @@ export default function RawDataPage() {
               </tr>
             </thead>
             <tbody style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
-              {sorted.length === 0 ? (
-                <tr>
-                  <td colSpan={visibleColDefs.length} className="text-center py-12 text-ink-400">
-                    Nenhuma filial encontrada com os filtros selecionados.
-                  </td>
-                </tr>
-              ) : (
-                virtualItems.map((virtualRow) => {
+              {virtualItems.map((virtualRow) => {
                   const c  = sorted[virtualRow.index]
                   const ri = virtualRow.index
                   return (
@@ -277,8 +281,7 @@ export default function RawDataPage() {
                       })}
                     </tr>
                   )
-                })
-              )}
+                })}
             </tbody>
           </table>
         </div>
@@ -289,7 +292,7 @@ export default function RawDataPage() {
           <span>Impostos reforma: <strong className="text-ink-900">{fmtM(sorted.reduce((s, c) => s + c.totalTaxReform, 0))}</strong></span>
           <span>Colaboradores: <strong className="text-ink-900">{sorted.reduce((s, c) => s + c.employees, 0).toLocaleString('pt-BR')}</strong></span>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

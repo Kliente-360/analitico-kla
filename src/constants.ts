@@ -18,37 +18,36 @@ export const SERVICE_BUSINESS_LINES = [
 // Backwards-compat alias
 export const SERVICE_SECTORS = SERVICE_BUSINESS_LINES
 
-// Paleta geral de gráficos — alinhada ao novo brand azul Kliente 360
+// Paleta geral de gráficos — vermelho institucional + neutros quentes
 export const CHART_COLORS = [
-  '#0b3d8c', '#1f7a5a', '#b87514', '#d04a3b',
-  '#6e9bdb', '#0f4cab', '#5a6779', '#0a3275',
-  '#2c3848', '#8390a3',
+  '#e30613', '#1f7a5a', '#b87514', '#5a6779',
+  '#c0392b', '#2c3848', '#6e7e98', '#8390a3',
+  '#4a7c8e', '#d04a3b',
 ]
 
-// Cor por linha de negócio (consistente em todas as páginas)
+// Cor por linha de negócio — vermelho como segmento principal, neutros e acentos para os demais
 export const BUSINESS_LINE_COLORS: Record<string, string> = {
-  'Varejo':           '#0b3d8c',
-  'Tecnologia':       '#1f7a5a',
-  'Logística':        '#b87514',
-  'Atacado':          '#0f4cab',
-  'Serviços':         '#d04a3b',
-  // legado — mantido para compatibilidade com páginas ainda não reescritas
-  'Indústria':        '#6e9bdb',
-  'Agronegócio':      '#5a6779',
-  'Saúde':            '#2c3848',
-  'Construção Civil': '#8390a3',
-  'Financeiro':       '#0a3275',
-  'Telecomunicações': '#b3bccb',
-  'Energia':          '#3a4a66',
+  'Varejo':           '#e30613',  // brand red — segmento de bens (principal)
+  'Tecnologia':       '#1f7a5a',  // verde (accent-down)
+  'Logística':        '#b87514',  // âmbar (accent-warn)
+  'Atacado':          '#5a6779',  // neutro ink-500
+  'Serviços':         '#c0392b',  // terracota
+  'Indústria':        '#2c3848',  // neutro escuro
+  'Agronegócio':      '#6e7e98',  // neutro médio
+  'Saúde':            '#4a7c8e',  // azul-petróleo
+  'Construção Civil': '#8390a3',  // neutro claro
+  'Financeiro':       '#d04a3b',  // terroso (accent-up)
+  'Telecomunicações': '#3a4a5e',  // neutro azulado
+  'Energia':          '#2c3848',  // neutro escuro
 }
 // Backwards-compat alias
 export const SECTOR_COLORS = BUSINESS_LINE_COLORS
 
-// Cor por região
+// Cor por região — vermelho para maior região (Sudeste), acentos para demais
 export const REGION_COLORS: Record<string, string> = {
-  'Sudeste':      '#0b3d8c',
+  'Sudeste':      '#e30613',  // brand red — maior região
   'Sul':          '#1f7a5a',
   'Nordeste':     '#b87514',
-  'Centro-Oeste': '#d04a3b',
-  'Norte':        '#6e9bdb',
+  'Centro-Oeste': '#c0392b',
+  'Norte':        '#5a6779',
 }

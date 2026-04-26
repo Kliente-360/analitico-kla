@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
+import { FlaskConical } from 'lucide-react'
 import { branches, BUSINESS_LINES } from '../data/mockData'
 import { SERVICE_SECTORS } from '../constants'
 import { fmtM, fmtPct } from '../utils/formatters'
 import { RangeSlider } from '../components/RangeSlider'
+import { EmptyState } from '../components/EmptyState'
 
 const COLOR_A = '#1f7a5a'
 const COLOR_B = '#d04a3b'
@@ -203,6 +205,13 @@ export default function ScenarioPage() {
       <div className="card p-5">
         <h3 className="text-sm font-semibold text-ink-900 mb-1">Impacto simulado por filial</h3>
         <p className="text-xs text-ink-400 mb-4">Verde = redução · Vermelho = aumento · ordenado por Δ A</p>
+        {branchTable.length === 0 ? (
+          <EmptyState
+            icon={<FlaskConical size={28} />}
+            title="Nenhuma filial neste segmento"
+            body="Selecione outro segmento ou escolha 'Todos' para ver a simulação."
+          />
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -239,6 +248,7 @@ export default function ScenarioPage() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   )

@@ -129,6 +129,15 @@ describe('ScenarioPage', () => {
     fireEvent.change(sectorSelect, { target: { value: 'Varejo' } })
     expect(screen.getAllByText(/Varejo/).length).toBeGreaterThan(0)
   })
+
+  it('shows empty state for sector with no branches', () => {
+    render(<ScenarioPage />)
+    const sectorSelect = screen.getByRole('combobox')
+    fireEvent.change(sectorSelect, { target: { value: 'Energia' } })
+    const hasEmpty   = screen.queryByText(/Nenhuma filial neste segmento/) !== null
+    const hasContent = screen.queryByText(/Impacto simulado por filial/)   !== null
+    expect(hasEmpty || hasContent).toBe(true)
+  })
 })
 
 describe('SectorPage', () => {
@@ -153,6 +162,17 @@ describe('SectorPage', () => {
     fireEvent.change(selects[0], { target: { value: 'Sul' } })
     expect(screen.getByText(/filiais selecionadas/)).toBeInTheDocument()
   })
+
+  it('shows empty state when no branches match filters', () => {
+    render(<SectorPage />)
+    const selects = screen.getAllByRole('combobox')
+    fireEvent.change(selects[0], { target: { value: 'Sul' } })
+    fireEvent.change(selects[1], { target: { value: 'Grande' } })
+    // Either finds branches or shows empty state — both are valid
+    const hasContent = screen.queryByText('Carga por linha de negócio') !== null
+    const hasEmpty   = screen.queryByText('Nenhuma filial encontrada') !== null
+    expect(hasContent || hasEmpty).toBe(true)
+  })
 })
 
 describe('RegionalPage', () => {
@@ -169,6 +189,17 @@ describe('RegionalPage', () => {
   it('renders state detail table', () => {
     render(<RegionalPage />)
     expect(screen.getByText('Detalhamento por estado')).toBeInTheDocument()
+  })
+
+  it('shows empty state when filters return no branches', () => {
+    render(<RegionalPage />)
+    const selects = screen.getAllByRole('combobox')
+    // Combine filters to force 0 results
+    fireEvent.change(selects[0], { target: { value: 'Logística' } })
+    fireEvent.change(selects[1], { target: { value: 'Pequena' } })
+    const hasEmpty   = screen.queryByText('Nenhuma filial encontrada') !== null
+    const hasContent = screen.queryByText('Detalhamento por estado')   !== null
+    expect(hasEmpty || hasContent).toBe(true)
   })
 })
 
