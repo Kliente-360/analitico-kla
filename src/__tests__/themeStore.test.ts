@@ -50,4 +50,26 @@ describe('themeStore', () => {
     const { theme } = useThemeStore.getState()
     expect(theme.brandName).toBe(PRESET_THEMES[DEFAULT_THEME_KEY].brandName)
   })
+
+  it('toggleDarkMode switches darkMode from false to true', () => {
+    useThemeStore.setState({ darkMode: false })
+    useThemeStore.getState().toggleDarkMode()
+    expect(useThemeStore.getState().darkMode).toBe(true)
+    expect(localStorage.getItem('analitico-dark')).toBe('true')
+  })
+
+  it('toggleDarkMode switches darkMode from true to false', () => {
+    useThemeStore.setState({ darkMode: true })
+    useThemeStore.getState().toggleDarkMode()
+    expect(useThemeStore.getState().darkMode).toBe(false)
+    expect(localStorage.getItem('analitico-dark')).toBe('false')
+  })
+
+  it('toggleDarkMode sets data-theme attribute on documentElement', () => {
+    useThemeStore.setState({ darkMode: false })
+    useThemeStore.getState().toggleDarkMode()
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    useThemeStore.getState().toggleDarkMode()
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+  })
 })

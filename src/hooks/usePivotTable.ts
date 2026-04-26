@@ -14,6 +14,7 @@ export function getDimValue(c: Company, dim: DimensionKey): string {
     case 'state':  return c.state
     case 'region': return c.region
     case 'size':   return c.size
+    case 'city':   return c.city ?? c.state
     case 'decade': return `${Math.floor(c.founded / 10) * 10}s`
   }
 }

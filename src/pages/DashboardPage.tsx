@@ -15,7 +15,6 @@ const avgRateCurrent = (totalCurrent / totalRevenue) * 100
 const avgRateReform  = (totalReform  / totalRevenue) * 100
 const totalEmployees = branches.reduce((s, b) => s + b.employees, 0)
 
-// Tributo com maior participação atual
 const TAX_FIELDS: { key: keyof typeof branches[0]; label: string }[] = [
   { key: 'icms',   label: 'ICMS'   },
   { key: 'cofins', label: 'COFINS' },
@@ -32,12 +31,9 @@ const taxBreakdown = TAX_FIELDS.map(({ key, label }) => ({
 
 const topTax    = taxBreakdown[0]
 const topTaxPct = (topTax.value / totalCurrent) * 100
-
-// Filial com maior carga absoluta
 const topBranch = [...branches].sort((a, b) => b.totalTaxCurrent - a.totalTaxCurrent)[0]
-
-// Filial com anomalia (ISS > 50% da carga)
-const anomaly = branches.find((b) => b.iss > 0 && (b.iss / b.totalTaxCurrent) > 0.45)
+const anomaly   = branches.find((b) => b.iss > 0 && (b.iss / b.totalTaxCurrent) > 0.45)
+const bestReduction = [...branches].sort((a, b) => a.taxDeltaPercent - b.taxDeltaPercent)[0]
 
 // ─── Componentes ──────────────────────────────────────────────────────────────
 
@@ -56,7 +52,6 @@ function HeroImpact() {
         com a reforma.
       </h1>
 
-      {/* Comparison bars */}
       <div className="space-y-3 mb-6">
         {[
           { label: 'Regime atual',       value: totalCurrent, color: 'bg-white/30' },
@@ -201,12 +196,9 @@ function FilialBars() {
   )
 }
 
-const bestReduction = [...branches].sort((a, b) => a.taxDeltaPercent - b.taxDeltaPercent)[0]
-
 function InsightCards() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      {/* Top branch */}
       <div className="card p-4">
         <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-widest mb-2">Maior contribuinte</p>
         <p className="text-sm font-semibold text-ink-900">{topBranch.name}</p>
@@ -215,7 +207,6 @@ function InsightCards() {
         </p>
       </div>
 
-      {/* Dominant tax */}
       <div className="card p-4">
         <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-widest mb-2">Tributo dominante</p>
         <p className="text-sm font-semibold text-ink-900">{topTax.label}</p>
@@ -224,7 +215,6 @@ function InsightCards() {
         </p>
       </div>
 
-      {/* Anomaly or best reduction */}
       {anomaly ? (
         <div className="card p-4 border-accent-warn bg-amber-50/50">
           <p className="text-[11px] font-semibold text-accent-warn uppercase tracking-widest mb-2 flex items-center gap-1">

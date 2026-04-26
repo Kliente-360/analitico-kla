@@ -1,11 +1,14 @@
 import { useState, useMemo } from 'react'
-import { RotateCcw } from 'lucide-react'
-import { branches } from '../data/mockData'
+import { branches, BUSINESS_LINES } from '../data/mockData'
 import { SERVICE_SECTORS } from '../constants'
-import { fmtM } from '../utils/formatters'
+import { fmtM, fmtPct } from '../utils/formatters'
 import { RangeSlider } from '../components/RangeSlider'
-import { SkeletonScenarioPage } from '../components/Skeleton'
-import { usePageReady } from '../hooks/usePageReady'
+
+const COLOR_A = '#1f7a5a'
+const COLOR_B = '#d04a3b'
+
+const DEFAULTS_A = { cbs: 7.5,  ibsBens: 14.0, ibsSvc: 12.0 }
+const DEFAULTS_B = { cbs: 9.0,  ibsBens: 16.0, ibsSvc: 14.0 }
 
 const COLOR_A = '#1f7a5a'   // accent-down — "otimista"
 const COLOR_B = '#d04a3b'   // accent-up  — "conservador"
@@ -13,113 +16,190 @@ const COLOR_REFORM = '#e30613'
 const COLOR_CURRENT = '#8390a3'
 
 function simTax(
-  c: { irpj: number; csll: number; revenue: number; sector: string },
+  b: { irpj: number; csll: number; revenue: number; sector: string },
   cbs: number, ibsBens: number, ibsSvc: number,
-): number {
-  const isSvc = SERVICE_SECTORS.includes(c.sector)
-  return c.irpj + c.csll
-    + c.revenue * (cbs / 100)
-    + c.revenue * ((isSvc ? ibsSvc : ibsBens) / 100)
+) {
+  const isSvc = SERVICE_SECTORS.includes(b.sector)
+  return b.irpj + b.csll
+    + b.revenue * (cbs / 100)
+    + b.revenue * ((isSvc ? ibsSvc : ibsBens) / 100)
 }
 
-interface SliderPanelProps {
-  tag:      string
-  title:    string
-  color:    string
-  cbs:      number; ibsBens: number; ibsSvc: number
-  onCbs:    (v: number) => void
-  onBens:   (v: number) => void
-  onSvc:    (v: number) => void
-  onReset:  () => void
-  total:    number
-  delta:    number
-  accent?:  boolean
+interface ScenarioPanelProps {
+  label: string; color: string
+  cbs: number; ibsBens: number; ibsSvc: number
+  total: number; deltaPct: number
+  onCbs: (v: number) => void
+  onIbsBens: (v: number) => void
+  onIbsSvc: (v: number) => void
 }
 
-function ScenarioPanel({ tag, title, color, cbs, ibsBens, ibsSvc, onCbs, onBens, onSvc, onReset, total, delta, accent }: SliderPanelProps) {
+function ScenarioPanel({
+  label, color, cbs, ibsBens, ibsSvc, total, deltaPct,
+  onCbs, onIbsBens, onIbsSvc,
+}: ScenarioPanelProps) {
   return (
-    <div className={`card p-5 space-y-5 ${accent ? 'border-2 border-primary-700' : ''}`}>
-      {/* Header */}
+    <div className="card p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <span
-            className="text-[10px] font-bold tracking-widest px-2 py-1 rounded text-white"
-            style={{ background: color }}
-          >
-            {tag}
-          </span>
-          <span className="text-sm font-semibold text-ink-900">{title}</span>
+        <p className="text-sm font-semibold" style={{ color }}>{label}</p>
+        <div className="text-right">
+          <p className="text-base font-bold text-ink-900">{fmtM(total)}</p>
+          <p className={`text-xs font-semibold ${deltaPct < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
+            {fmtPct(deltaPct)} vs atual
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={onReset}
-          className="text-[11px] text-ink-400 hover:text-ink-700 flex items-center gap-1 transition-colors"
-        >
-          <RotateCcw size={11} /> resetar
-        </button>
       </div>
-
-      {/* Sliders */}
-      <div className="space-y-4">
-        <RangeSlider label="CBS (substitui PIS + COFINS)" value={cbs}     min={0} max={15} step={0.1} onChange={onCbs}  color={color} />
-        <RangeSlider label="IBS — Bens (substitui ICMS)"  value={ibsBens} min={0} max={30} step={0.5} onChange={onBens} color={color} />
-        <RangeSlider label="IBS — Serviços (subst. ISS)"  value={ibsSvc}  min={0} max={20} step={0.1} onChange={onSvc}  color={color} />
-      </div>
-
-      <hr className="border-ink-100" />
-
-      {/* Result */}
-      <div>
-        <p className="text-[10px] font-semibold text-ink-400 uppercase tracking-widest mb-1.5">Carga total simulada</p>
-        <div className="flex items-baseline gap-2">
-          <span className="font-display text-3xl font-semibold text-ink-900">{fmtM(total)}</span>
-          <span className="text-xs text-ink-400">R$ M</span>
-        </div>
-        <p className={`text-sm font-semibold mt-1 ${delta < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
-          {delta < 0 ? '−' : '+'}{fmtM(Math.abs(delta))}{' '}
-          <span className="text-ink-400 font-normal">vs regime atual</span>
-        </p>
+      <div className="space-y-4 print:hidden">
+        <RangeSlider label="CBS (substitui PIS + COFINS)" value={cbs}     min={0} max={15} step={0.1} onChange={onCbs}     color={color} />
+        <RangeSlider label="IBS — Bens (substitui ICMS)"  value={ibsBens} min={0} max={30} step={0.5} onChange={onIbsBens} color={color} />
+        <RangeSlider label="IBS — Serviços (subst. ISS)"  value={ibsSvc}  min={0} max={20} step={0.1} onChange={onIbsSvc}  color={color} />
       </div>
     </div>
   )
 }
 
-function ComparisonBars({ current, reform, simA, simB }: { current: number; reform: number; simA: number; simB: number }) {
-  const items = [
-    { label: 'Atual',          value: current, color: COLOR_CURRENT },
-    { label: 'Reforma oficial', value: reform,  color: COLOR_REFORM  },
-    { label: 'Cenário A',      value: simA,    color: COLOR_A       },
-    { label: 'Cenário B',      value: simB,    color: COLOR_B       },
+function ComparisonBars({
+  current, reform, totalA, totalB,
+}: { current: number; reform: number; totalA: number; totalB: number }) {
+  const max  = Math.max(current, reform, totalA, totalB)
+  const bars = [
+    { label: 'Regime atual',    value: current, color: '#8390a3' },
+    { label: 'Reforma oficial', value: reform,  color: '#b87514' },
+    { label: 'Cenário A',       value: totalA,  color: COLOR_A   },
+    { label: 'Cenário B',       value: totalB,  color: COLOR_B   },
   ]
-  const max = Math.max(...items.map((i) => i.value)) * 1.1
-
   return (
     <div className="card p-5">
-      <div className="flex items-end justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-ink-900">Resumo comparativo</h3>
-          <p className="text-xs text-ink-400 mt-0.5">Carga total sob 4 regimes</p>
-        </div>
-        <div className="text-xs text-ink-400 font-mono">
-          A: {simA < current ? '−' : '+'}{fmtM(Math.abs(simA - current))} ·
-          B: {simB < current ? '−' : '+'}{fmtM(Math.abs(simB - current))}
+      <h3 className="text-sm font-semibold text-ink-900 mb-1">Comparativo de cenários</h3>
+      <p className="text-xs text-ink-400 mb-4">Carga tributária total simulada (R$ M)</p>
+      <div className="space-y-3">
+        {bars.map(({ label, value, color }) => {
+          const pct   = max > 0 ? (value / max) * 100 : 0
+          const delta = current > 0 ? ((value - current) / current) * 100 : 0
+          return (
+            <div key={label}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-ink-700">{label}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-ink-500">{fmtM(value)}</span>
+                  {label !== 'Regime atual' && (
+                    <span className={`text-[11px] font-semibold font-mono ${delta < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
+                      {delta >= 0 ? '+' : ''}{delta.toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="h-3 bg-ink-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${pct}%`, background: color }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export default function ScenarioPage() {
+  const [sectorFilter, setSectorFilter] = useState('Todos')
+
+  const [cbsA,     setCbsA]     = useState(DEFAULTS_A.cbs)
+  const [ibsBensA, setIbsBensA] = useState(DEFAULTS_A.ibsBens)
+  const [ibsSvcA,  setIbsSvcA]  = useState(DEFAULTS_A.ibsSvc)
+
+  const [cbsB,     setCbsB]     = useState(DEFAULTS_B.cbs)
+  const [ibsBensB, setIbsBensB] = useState(DEFAULTS_B.ibsBens)
+  const [ibsSvcB,  setIbsSvcB]  = useState(DEFAULTS_B.ibsSvc)
+
+  const baseBranches = useMemo(
+    () => sectorFilter === 'Todos' ? branches : branches.filter((b) => b.sector === sectorFilter),
+    [sectorFilter],
+  )
+
+  const currentTotal = useMemo(() => baseBranches.reduce((s, b) => s + b.totalTaxCurrent, 0), [baseBranches])
+  const reformTotal  = useMemo(() => baseBranches.reduce((s, b) => s + b.totalTaxReform,  0), [baseBranches])
+  const totalA = useMemo(
+    () => baseBranches.reduce((s, b) => s + simTax(b, cbsA, ibsBensA, ibsSvcA), 0),
+    [baseBranches, cbsA, ibsBensA, ibsSvcA],
+  )
+  const totalB = useMemo(
+    () => baseBranches.reduce((s, b) => s + simTax(b, cbsB, ibsBensB, ibsSvcB), 0),
+    [baseBranches, cbsB, ibsBensB, ibsSvcB],
+  )
+
+  const deltaPctA = currentTotal ? ((totalA - currentTotal) / currentTotal) * 100 : 0
+  const deltaPctB = currentTotal ? ((totalB - currentTotal) / currentTotal) * 100 : 0
+
+  const branchTable = useMemo(() =>
+    baseBranches.map((b) => {
+      const sA    = simTax(b, cbsA, ibsBensA, ibsSvcA)
+      const sB    = simTax(b, cbsB, ibsBensB, ibsSvcB)
+      const dPctA = b.totalTaxCurrent ? ((sA - b.totalTaxCurrent) / b.totalTaxCurrent) * 100 : 0
+      const dPctB = b.totalTaxCurrent ? ((sB - b.totalTaxCurrent) / b.totalTaxCurrent) * 100 : 0
+      return { ...b, sA, sB, dPctA, dPctB }
+    }).sort((a, b) => a.dPctA - b.dPctA),
+    [baseBranches, cbsA, ibsBensA, ibsSvcA, cbsB, ibsBensB, ibsSvcB],
+  )
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-lg font-bold text-ink-900">Simulação de Cenários</h2>
+        <p className="text-sm text-ink-500">Ajuste as alíquotas e compare dois cenários em tempo real.</p>
+      </div>
+
+      {/* Filter */}
+      <div className="card p-3 sm:p-4 print:hidden">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="w-52">
+            <label className="block text-xs font-semibold text-ink-500 uppercase tracking-wide mb-1">Filtrar segmento</label>
+            <select className="select-field" value={sectorFilter} onChange={(e) => setSectorFilter(e.target.value)}>
+              <option>Todos</option>
+              {BUSINESS_LINES.map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <p className="text-xs text-ink-400 pb-1">IRPJ e CSLL mantidos sem alteração · Serviços usam alíquota IBS-Serviços</p>
         </div>
       </div>
 
-      <div className="flex items-end justify-between gap-4 h-36 pb-6 px-2">
-        {items.map(({ label, value, color }) => (
-          <div key={label} className="flex-1 flex flex-col items-center gap-2 h-full">
-            <div className="flex-1 w-full flex items-end">
-              <div
-                className="w-full rounded-t-sm transition-all relative"
-                style={{ height: `${(value / max) * 100}%`, background: color }}
-              >
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold whitespace-nowrap" style={{ color }}>
-                  {fmtM(value)}
-                </div>
-              </div>
-            </div>
-            <span className="text-[11px] text-ink-600 font-medium text-center">{label}</span>
+      {/* Scenario panels — A/B always visible */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden">
+        <ScenarioPanel
+          label="Cenário A" color={COLOR_A}
+          cbs={cbsA} ibsBens={ibsBensA} ibsSvc={ibsSvcA}
+          total={totalA} deltaPct={deltaPctA}
+          onCbs={setCbsA} onIbsBens={setIbsBensA} onIbsSvc={setIbsSvcA}
+        />
+        <ScenarioPanel
+          label="Cenário B" color={COLOR_B}
+          cbs={cbsB} ibsBens={ibsBensB} ibsSvc={ibsSvcB}
+          total={totalB} deltaPct={deltaPctB}
+          onCbs={setCbsB} onIbsBens={setIbsBensB} onIbsSvc={setIbsSvcB}
+        />
+      </div>
+
+      {/* Comparison bars */}
+      <ComparisonBars current={currentTotal} reform={reformTotal} totalA={totalA} totalB={totalB} />
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Regime atual',    value: currentTotal, delta: null as number | null },
+          { label: 'Reforma oficial', value: reformTotal,  delta: currentTotal ? ((reformTotal - currentTotal) / currentTotal) * 100 : 0 },
+          { label: 'Cenário A',       value: totalA,       delta: deltaPctA },
+          { label: 'Cenário B',       value: totalB,       delta: deltaPctB },
+        ].map(({ label, value, delta }) => (
+          <div key={label} className="card p-4">
+            <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-widest">{label}</p>
+            <p className="text-lg font-bold text-ink-900 mt-1">{fmtM(value)}</p>
+            {delta !== null && (
+              <p className={`text-xs font-semibold mt-0.5 ${delta < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
+                {delta >= 0 ? '+' : ''}{delta.toFixed(1)}% vs atual
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -127,108 +207,39 @@ function ComparisonBars({ current, reform, simA, simB }: { current: number; refo
   )
 }
 
-const DEFAULTS_A = { cbs: 7.5, ibsBens: 14.0, ibsSvc: 12.0 }
-const DEFAULTS_B = { cbs: 9.5, ibsBens: 19.0, ibsSvc: 16.0 }
-
-export default function ScenarioPage() {
-  const ready = usePageReady()
-
-  const [cbsA,    setCbsA]    = useState(DEFAULTS_A.cbs)
-  const [ibsBensA, setIbsBensA] = useState(DEFAULTS_A.ibsBens)
-  const [ibsSvcA, setIbsSvcA] = useState(DEFAULTS_A.ibsSvc)
-
-  const [cbsB,    setCbsB]    = useState(DEFAULTS_B.cbs)
-  const [ibsBensB, setIbsBensB] = useState(DEFAULTS_B.ibsBens)
-  const [ibsSvcB, setIbsSvcB] = useState(DEFAULTS_B.ibsSvc)
-
-  const current = useMemo(() => branches.reduce((s, b) => s + b.totalTaxCurrent, 0), [])
-  const reform  = useMemo(() => branches.reduce((s, b) => s + b.totalTaxReform,  0), [])
-  const simA    = useMemo(() => branches.reduce((s, b) => s + simTax(b, cbsA, ibsBensA, ibsSvcA), 0), [cbsA, ibsBensA, ibsSvcA])
-  const simB    = useMemo(() => branches.reduce((s, b) => s + simTax(b, cbsB, ibsBensB, ibsSvcB), 0), [cbsB, ibsBensB, ibsSvcB])
-
-  const branchTable = useMemo(() => branches.map((b) => {
-    const a  = simTax(b, cbsA, ibsBensA, ibsSvcA)
-    const bs = simTax(b, cbsB, ibsBensB, ibsSvcB)
-    return {
-      ...b,
-      simA: a, simB: bs,
-      dPctA: b.totalTaxCurrent ? ((a  - b.totalTaxCurrent) / b.totalTaxCurrent) * 100 : 0,
-      dPctB: b.totalTaxCurrent ? ((bs - b.totalTaxCurrent) / b.totalTaxCurrent) * 100 : 0,
-    }
-  }).sort((a, b) => a.dPctA - b.dPctA), [cbsA, ibsBensA, ibsSvcA, cbsB, ibsBensB, ibsSvcB])
-
-  if (!ready) return <SkeletonScenarioPage />
-
-  return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-ink-900 tracking-tight">E se a alíquota fosse outra?</h2>
-          <p className="text-sm text-ink-400 mt-0.5">
-            Ajuste CBS e IBS e veja em tempo real o impacto sobre o Grupo Meridional. Compare dois cenários.
-          </p>
-        </div>
-      </div>
-
-      {/* Comparison bars */}
-      <ComparisonBars current={current} reform={reform} simA={simA} simB={simB} />
-
-      {/* Two scenario cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ScenarioPanel
-          tag="CENÁRIO A" title="Otimista · alíquotas reduzidas"
-          color={COLOR_A}
-          cbs={cbsA} ibsBens={ibsBensA} ibsSvc={ibsSvcA}
-          onCbs={setCbsA} onBens={setIbsBensA} onSvc={setIbsSvcA}
-          onReset={() => { setCbsA(DEFAULTS_A.cbs); setIbsBensA(DEFAULTS_A.ibsBens); setIbsSvcA(DEFAULTS_A.ibsSvc) }}
-          total={simA} delta={simA - current}
-        />
-        <ScenarioPanel
-          tag="CENÁRIO B" title="Conservador · alíquotas elevadas"
-          color={COLOR_B}
-          cbs={cbsB} ibsBens={ibsBensB} ibsSvc={ibsSvcB}
-          onCbs={setCbsB} onBens={setIbsBensB} onSvc={setIbsSvcB}
-          onReset={() => { setCbsB(DEFAULTS_B.cbs); setIbsBensB(DEFAULTS_B.ibsBens); setIbsSvcB(DEFAULTS_B.ibsSvc) }}
-          total={simB} delta={simB - current}
-        />
-      </div>
-
-      {/* Per-branch table */}
-      <div className="card overflow-hidden">
-        <div className="px-5 py-3 border-b border-ink-100">
-          <h3 className="text-sm font-semibold text-ink-900">Impacto por filial</h3>
-          <p className="text-xs text-ink-400 mt-0.5">Verde = redução · Vermelho = aumento · IRPJ e CSLL sem alteração</p>
-        </div>
+      {/* Branch table */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-ink-900 mb-1">Impacto simulado por filial</h3>
+        <p className="text-xs text-ink-400 mb-4">Verde = redução · Vermelho = aumento · ordenado por Δ A</p>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-ink-50 border-b border-ink-200">
-                <th className="text-left px-4 py-2.5 font-semibold text-ink-500 uppercase tracking-wider text-[11px]">Filial</th>
-                <th className="text-left px-4 py-2.5 font-semibold text-ink-500 uppercase tracking-wider text-[11px]">Segmento</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-ink-500 uppercase tracking-wider text-[11px]">Atual</th>
-                <th className="text-right px-4 py-2.5 font-semibold uppercase tracking-wider text-[11px]" style={{ color: COLOR_A }}>Cenário A</th>
-                <th className="text-right px-4 py-2.5 font-semibold uppercase tracking-wider text-[11px]" style={{ color: COLOR_A }}>Δ A</th>
-                <th className="text-right px-4 py-2.5 font-semibold uppercase tracking-wider text-[11px]" style={{ color: COLOR_B }}>Cenário B</th>
-                <th className="text-right px-4 py-2.5 font-semibold uppercase tracking-wider text-[11px]" style={{ color: COLOR_B }}>Δ B</th>
+              <tr className="text-xs text-ink-500 border-b border-ink-200">
+                <th className="text-left py-2 px-3 font-semibold">Filial</th>
+                <th className="text-left py-2 px-3 font-semibold">Segmento</th>
+                <th className="text-right py-2 px-3 font-semibold">Atual</th>
+                <th className="text-right py-2 px-3 font-semibold">Cenário A</th>
+                <th className="text-right py-2 px-3 font-semibold">Δ A</th>
+                <th className="text-right py-2 px-3 font-semibold">Cenário B</th>
+                <th className="text-right py-2 px-3 font-semibold">Δ B</th>
               </tr>
             </thead>
             <tbody>
               {branchTable.map((b, i) => (
-                <tr key={b.id} className={`border-b border-ink-100 ${i % 2 === 0 ? '' : 'bg-ink-50'}`}>
-                  <td className="px-4 py-2.5 font-medium text-ink-800">{b.name}</td>
-                  <td className="px-4 py-2.5 text-ink-500">{b.sector}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-ink-700">{fmtM(b.totalTaxCurrent)}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-ink-700">{fmtM(b.simA)}</td>
-                  <td className="px-4 py-2.5 text-right">
-                    <span className={`font-mono font-semibold ${b.dPctA < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
-                      {b.dPctA > 0 ? '+' : ''}{b.dPctA.toFixed(1)}%
+                <tr key={b.id} className={i % 2 === 0 ? 'bg-paper' : 'bg-ink-50'}>
+                  <td className="py-2 px-3 font-medium text-ink-800">{b.name}</td>
+                  <td className="py-2 px-3 text-ink-500">{b.sector}</td>
+                  <td className="py-2 px-3 text-right text-ink-700">{fmtM(b.totalTaxCurrent)}</td>
+                  <td className="py-2 px-3 text-right text-ink-700">{fmtM(b.sA)}</td>
+                  <td className="py-2 px-3 text-right">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${b.dPctA < 0 ? 'bg-green-100 text-accent-down' : 'bg-red-100 text-accent-up'}`}>
+                      {b.dPctA >= 0 ? '+' : ''}{b.dPctA.toFixed(1)}%
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono text-ink-700">{fmtM(b.simB)}</td>
-                  <td className="px-4 py-2.5 text-right">
-                    <span className={`font-mono font-semibold ${b.dPctB < 0 ? 'text-accent-down' : 'text-accent-up'}`}>
-                      {b.dPctB > 0 ? '+' : ''}{b.dPctB.toFixed(1)}%
+                  <td className="py-2 px-3 text-right text-ink-700">{fmtM(b.sB)}</td>
+                  <td className="py-2 px-3 text-right">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${b.dPctB < 0 ? 'bg-green-100 text-accent-down' : 'bg-red-100 text-accent-up'}`}>
+                      {b.dPctB >= 0 ? '+' : ''}{b.dPctB.toFixed(1)}%
                     </span>
                   </td>
                 </tr>

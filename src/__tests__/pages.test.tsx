@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { vi } from 'vitest'
 
 vi.mock('../hooks/usePageReady', () => ({ usePageReady: () => true }))
@@ -51,21 +51,22 @@ import SectorPage     from '../pages/SectorPage'
 import RegionalPage   from '../pages/RegionalPage'
 import TrendPage      from '../pages/TrendPage'
 import RawDataPage    from '../pages/RawDataPage'
+import LoginPage      from '../pages/LoginPage'
 
 describe('DashboardPage', () => {
-  it('renders hero impact section', () => {
+  it('renders hero impact heading', () => {
     render(<DashboardPage />)
-    expect(screen.getByText(/vai pagar/i)).toBeInTheDocument()
+    expect(screen.getByText(/vai pagar/)).toBeInTheDocument()
   })
 
-  it('renders KPI strip with receita label', () => {
+  it('renders KPI cards', () => {
     render(<DashboardPage />)
     expect(screen.getByText('Receita total')).toBeInTheDocument()
   })
 
-  it('renders business line chart heading', () => {
+  it('renders insight cards', () => {
     render(<DashboardPage />)
-    expect(screen.getByText('Por linha de negócio')).toBeInTheDocument()
+    expect(screen.getByText('Maior contribuinte')).toBeInTheDocument()
   })
 })
 
@@ -84,6 +85,24 @@ describe('PivotTablePage', () => {
     render(<PivotTablePage />)
     expect(screen.getAllByRole('button').length).toBeGreaterThan(0)
   })
+
+  it('toggles sort direction on button click', () => {
+    render(<PivotTablePage />)
+    fireEvent.click(screen.getByText(/Maior → Menor/))
+    expect(screen.getByText(/Menor → Maior/)).toBeInTheDocument()
+  })
+
+  it('switches to a delta metric', () => {
+    render(<PivotTablePage />)
+    const selects = screen.getAllByRole('combobox')
+    fireEvent.change(selects[2], { target: { value: 'taxDeltaPercent' } })
+    expect(screen.getAllByText(/Variação/).length).toBeGreaterThan(0)
+  })
+
+  it('renders insight strip with grand total label', () => {
+    render(<PivotTablePage />)
+    expect(screen.getByText('Grand total')).toBeInTheDocument()
+  })
 })
 
 describe('ScenarioPage', () => {
@@ -92,9 +111,23 @@ describe('ScenarioPage', () => {
     expect(screen.getAllByText(/CBS/).length).toBeGreaterThan(0)
   })
 
-  it('renders scenario A card', () => {
+  it('shows Cenário A and B panels', () => {
     render(<ScenarioPage />)
-    expect(screen.getByText(/Otimista/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/Cenário A/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Cenário B/).length).toBeGreaterThan(0)
+  })
+
+  it('shows simulation results summary cards', () => {
+    render(<ScenarioPage />)
+    expect(screen.getAllByText('Regime atual').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Reforma oficial').length).toBeGreaterThan(0)
+  })
+
+  it('filters branches by sector', () => {
+    render(<ScenarioPage />)
+    const sectorSelect = screen.getByRole('combobox')
+    fireEvent.change(sectorSelect, { target: { value: 'Varejo' } })
+    expect(screen.getAllByText(/Varejo/).length).toBeGreaterThan(0)
   })
 })
 
@@ -177,5 +210,31 @@ describe('RawDataPage', () => {
     render(<RawDataPage />)
     expect(screen.getByText('Empresa')).toBeInTheDocument()
     expect(screen.getAllByText(/Setor|setor/i).length).toBeGreaterThan(0)
+  })
+})
+
+describe('LoginPage', () => {
+  it('renders email and password fields', () => {
+    render(<LoginPage />)
+    expect(screen.getByLabelText('E-mail')).toBeInTheDocument()
+    expect(screen.getByLabelText('Senha')).toBeInTheDocument()
+  })
+
+  it('renders login button', () => {
+    render(<LoginPage />)
+    expect(screen.getByRole('button', { name: /entrar/i })).toBeInTheDocument()
+  })
+
+  it('toggles password visibility', () => {
+    render(<LoginPage />)
+    const toggle = screen.getByLabelText(/mostrar senha/i)
+    fireEvent.click(toggle)
+    expect(screen.getByLabelText(/ocultar senha/i)).toBeInTheDocument()
+  })
+
+  it('fills credentials on demo row click', () => {
+    render(<LoginPage />)
+    fireEvent.click(screen.getAllByText(/admin@kliente360.com/)[0])
+    expect((screen.getByLabelText('E-mail') as HTMLInputElement).value).toBe('admin@kliente360.com')
   })
 })

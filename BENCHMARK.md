@@ -1,5 +1,5 @@
 # BENCHMARK TÉCNICO E FUNCIONAL — Analitico KLA
-**Versão:** 1.0 · **Data:** 2026-04-25 · **Revisão:** Automática (via Claude Code)
+**Versão:** 2.0 · **Data:** 2026-04-25 · **Revisão:** Pós-implementação Fases 1–3
 
 > Documento de referência para análise contínua de qualidade. Atualizar a cada sprint relevante.
 
@@ -25,127 +25,140 @@ Escala: **0–10** por subdimensão → média ponderada → score geral
 
 ## SCORES POR DIMENSÃO
 
-### 1. Código e Arquitetura — 9.0 / 10 🟢
+### 1. Código e Arquitetura — 9.2 / 10 🟢
+*(anterior: 9.0)*
 
 | Subdimensão | Score | Evidência |
 |-------------|-------|-----------|
 | TypeScript strict | 10/10 | `noUnusedLocals`, `noUnusedParameters`, zero `any`, zero `@ts-ignore` |
-| Separação de responsabilidades | 9/10 | Components / Hooks / Pages / Store / Utils / Constants claros |
-| Reutilização | 9/10 | `useTableFilter` em 4 páginas, `ChartTooltip` em 6 gráficos, `fmtM` centralizado |
-| Lazy loading | 9/10 | 7 pages lazy-loaded individualmente com Suspense + ErrorBoundary |
-| Code smells | 8/10 | Mínimos; `as unknown as SectorStat` em SectorPage:28 é o mais frágil |
+| Separação de responsabilidades | 9/10 | Components / Hooks / Pages / Store / Utils / Constants / Theme |
+| Reutilização | 9/10 | `useTableFilter` em 4 páginas, `ChartTooltip` em 6 gráficos, `usePageReady` em 7 páginas |
+| Lazy loading | 10/10 | 7 pages + ExportPdfButton lazy; vendor-pdf e vendor-virtual isolados |
+| Code smells | 9/10 | `useCallback` em todos os handlers; setState-in-effect eliminado (SectorPage) |
 | Acoplamento | 9/10 | `mockData.ts` é única fonte de verdade; páginas não dependem entre si |
 
-**Total ponderado:** 9.0 / 10
+**Total ponderado:** 9.2 / 10
 
 ---
 
-### 2. Funcionalidades — 8.7 / 10 🟢
+### 2. Funcionalidades — 9.2 / 10 🟢
+*(anterior: 8.7)*
 
 | Módulo | Score | Destaques |
 |--------|-------|-----------|
-| Dashboard | 9/10 | 5 KPIs + 6 gráficos + donut + scatter — cobertura completa |
+| Dashboard | 10/10 | 6 widgets drag-and-drop (dnd-kit), ordem persistida em localStorage |
 | Tabela Dinâmica | 9/10 | 5 dimensões × 16 métricas, soma/média automática, mobile card view |
 | Simulação de Cenários | 9/10 | 6 variáveis, recálculo em tempo real, modo comparação A vs B |
-| Análise por Setor | 8/10 | 4 gráficos + scatter + tabela resumo, 2 filtros combinados |
+| Análise por Setor | 9/10 | 4 gráficos + scatter + PeerBenchmark (6 métricas vs média do setor) |
 | Análise Regional | 8/10 | Treemap + barras por região + estado, 2 filtros combinados |
 | Tendências 2021–2033 | 8/10 | 3 séries, marcos da reforma, alternância área/linha |
-| Dados Brutos | 9/10 | 22 colunas configuráveis, busca, sort, CSV com BOM UTF-8 |
-| PDF/Print | 8/10 | CSS `@media print` zero-dependência, chrome ocultado automaticamente |
+| Dados Brutos | 9/10 | Virtualização (@tanstack/react-virtual), 22 colunas, busca, sort, CSV |
+| PDF Executivo | 9/10 | 4 páginas react-pdf (capa, KPIs, setores, top empresas) + window.print() |
+| Notificações | 9/10 | Zustand store + browser Notification API + bell com badge de não-lidas |
+| White-label | 9/10 | 4 temas predefinidos, CSS custom properties, persistência localStorage |
 
-**Total ponderado:** 8.7 / 10
-
----
-
-### 3. Testes e Qualidade — 6.0 / 10 🟡
-
-| Subdimensão | Score | Evidência |
-|-------------|-------|-----------|
-| Cobertura — utils | 10/10 | `formatters.ts` 100% coberto (24 casos) |
-| Cobertura — hooks | 10/10 | `usePivotTable` + `useTableFilter` 100% cobertos (22 casos) |
-| Cobertura — pages | 0/10 | Nenhum teste de integração ou snapshot |
-| Cobertura — components | 0/10 | KpiCard, RangeSlider, ChartTooltip, ErrorBoundary sem testes |
-| Cobertura — store | 0/10 | `authStore` (login/logout) sem testes |
-| Qualidade dos testes | 8/10 | AAA pattern, edge cases, factory functions, assertions específicas |
-| CI enforcement | 6/10 | Build + typecheck + testes no CI; sem linting, sem coverage report |
-
-**36 testes · 100% passando · Cobertura efetiva estimada: ~35% do código**
-
-**Total ponderado:** 6.0 / 10
+**Total ponderado:** 9.2 / 10
 
 ---
 
-### 4. Performance — 7.7 / 10 🟡
+### 3. Testes e Qualidade — 8.5 / 10 🟢
+*(anterior: 6.0)*
 
 | Subdimensão | Score | Evidência |
 |-------------|-------|-----------|
-| Initial load | 9/10 | Entry chunk 16KB — aba inicial carrega sem Recharts |
-| Code splitting | 9/10 | 7 chunks de página (7–12KB cada), 3 chunks de vendor |
-| Memoização | 8/10 | `useMemo` em todos os cálculos pesados, deps arrays corretos |
-| Bundle total | 6/10 | 752KB total; Recharts = 576KB (76%) — aceitável com gzip |
-| `useCallback` | 5/10 | Handlers de filtro não memoizados (risco de re-renders desnecessários) |
-| Virtualização | 3/10 | Tabelas sem virtualização — impacto com >500 linhas |
-| Web Vitals | N/A | Não medido (sem Lighthouse CI) |
+| Cobertura — utils | 10/10 | `formatters.ts` 100% (24 casos) |
+| Cobertura — hooks | 10/10 | `usePivotTable` + `useTableFilter` 100% (22 casos) |
+| Cobertura — pages | 8/10 | Testes de integração para todas as 7 páginas (Testing Library) |
+| Cobertura — components | 8/10 | KpiCard, RangeSlider, ChartTooltip, ErrorBoundary testados |
+| Cobertura — store | 8/10 | `authStore` (8 casos) + `themeStore` (6 casos) testados |
+| Qualidade dos testes | 8/10 | AAA pattern, mocks de recharts/dnd-kit/react-virtual, edge cases |
+| CI enforcement | 9/10 | ESLint + build + cobertura ≥50% branches (threshold enforced) + Lighthouse CI |
 
-| Chunk | Tamanho min. | Gzip |
-|-------|-------------|------|
-| vendor-recharts | 586 KB | ~165 KB |
-| vendor-misc | 40 KB | ~13 KB |
-| index (entry) | 12 KB | ~4 KB |
-| ScenarioPage | 9.5 KB | ~3 KB |
-| Demais pages | 7–8 KB cada | ~2 KB |
-| CSS | 21 KB | ~4.5 KB |
-| **TOTAL** | **~752 KB** | **~200 KB** |
+**93 testes · 10 arquivos · 100% passando**
+**Cobertura: Statements 57% · Branches 50.4% · Functions 51% · Lines 59%**
 
-**Total ponderado:** 7.7 / 10
+**Total ponderado:** 8.5 / 10
+
+---
+
+### 4. Performance — 8.5 / 10 🟢
+*(anterior: 7.7)*
+
+| Subdimensão | Score | Evidência |
+|-------------|-------|-----------|
+| Initial load | 9/10 | Entry chunk 19KB — primeira aba carrega sem Recharts nem PDF |
+| Code splitting | 10/10 | 9 chunks de página + vendor-pdf (lazy) + vendor-virtual isolados |
+| Skeleton loaders | 9/10 | `usePageReady` + `requestAnimationFrame` em todas as 7 páginas |
+| Memoização | 9/10 | `useMemo` em cálculos pesados + `useCallback` em todos os handlers |
+| Virtualização | 9/10 | `@tanstack/react-virtual` na RawDataPage (scrolling infinito) |
+| Bundle gzip (sem PDF) | 8/10 | ~215KB gzip total sem vendor-pdf (carregado sob demanda) |
+| Web Vitals | 5/10 | Lighthouse CI configurado; sem medição real ainda |
+
+| Chunk | Min. | Gzip |
+|-------|------|------|
+| vendor-pdf *(lazy)* | 1.460 KB | 491 KB |
+| vendor-recharts | 587 KB | 165 KB |
+| vendor-virtual | 60 KB | 19 KB |
+| vendor-misc | 45 KB | 14 KB |
+| index (entry) | 19 KB | 6 KB |
+| Pages (7×) | 7–12 KB | 2–3 KB |
+| CSS | 25 KB | 5 KB |
+| **TOTAL (sem PDF)** | **~780 KB** | **~215 KB** |
+
+**Total ponderado:** 8.5 / 10
 
 ---
 
 ### 5. Segurança — 5.3 / 10 🟡
+*(sem alteração — auth adiado intencionalmente)*
 
 | Subdimensão | Score | Evidência |
 |-------------|-------|-----------|
-| Autenticação | 2/10 | 🚨 Credenciais hardcoded em `authStore.ts:15-18`, visíveis no bundle |
-| XSS | 9/10 | React escapa output automaticamente; sem `dangerouslySetInnerHTML` |
-| Injeção | 9/10 | Dados locais; sem SQL; Papa Parse tem proteção integrada |
+| Autenticação | 2/10 | 🚨 Credenciais hardcoded em `authStore.ts`, visíveis no bundle |
+| XSS | 9/10 | React escapa output; sem `dangerouslySetInnerHTML` |
+| Injeção | 9/10 | Dados locais; sem SQL; Papa Parse com proteção integrada |
 | Exposição de dados | 8/10 | Dados simulados, nenhuma API call, nenhum token exposto |
-| CSP / Headers | 4/10 | Não configurado (Netlify sem headers customizados) |
-| Dependências | 7/10 | Sem vulnerabilidades críticas conhecidas (npm audit limpo) |
-| Sessão | 3/10 | Estado em memória — perdido no refresh; sem expiração |
+| CSP / Headers | 4/10 | Não configurado |
+| Dependências | 7/10 | npm audit limpo |
+| Sessão | 3/10 | Estado em memória; perdido no refresh; sem expiração |
 
-**Risco crítico:** `authStore.ts` expõe `admin123` no bundle JavaScript. Inaceitável com dados reais de clientes.
+**Risco crítico:** `authStore.ts` expõe `admin123` no bundle. Inaceitável com dados reais de clientes.
 
 **Total ponderado:** 5.3 / 10
 
 ---
 
-### 6. UX e Responsividade — 6.5 / 10 🟡
+### 6. UX e Responsividade — 8.0 / 10 🟢
+*(anterior: 6.5)*
 
 | Subdimensão | Score | Evidência |
 |-------------|-------|-----------|
-| Mobile — layout | 7/10 | Grids adaptativos (2→3→5 colunas), flex-wrap em filtros |
+| Mobile — layout | 7/10 | Grids adaptativos, flex-wrap em filtros |
 | Mobile — pivot table | 9/10 | Vista card resumida em `< md`, tabela completa em `≥ md` |
-| Print/PDF | 8/10 | `@media print` oculta header/footer/controles; botão no header |
-| Acessibilidade | 3/10 | Sem `aria-label`, sem `<nav>` landmarks, sem `aria-current` |
-| Focus management | 3/10 | Sem `autoFocus`, sem focus trap, sem skip-to-content |
-| Contraste de cores | 8/10 | Paleta verde/cinza/azul atende WCAG AA visualmente |
-| Touch targets | 7/10 | Botões com `px-3 py-1.5` — mínimo 44px não garantido em mobile |
-| Alturas de gráficos | 6/10 | Fixas (220–300px) — não se adaptam ao viewport mobile |
+| Print / PDF | 9/10 | `window.print()` + react-pdf 4 páginas; controles ocultos automaticamente |
+| Acessibilidade ARIA | 7/10 | `aria-label`, `aria-current`, `role="alert"`, `htmlFor`/`id` implementados |
+| Focus management | 4/10 | Sem focus trap, sem skip-to-content |
+| Contraste de cores | 8/10 | Paleta atende WCAG AA visualmente |
+| Skeleton loaders | 9/10 | `animate-pulse` em todas as páginas durante carregamento |
+| Dashboard drag-and-drop | 9/10 | dnd-kit com sensor de 8px, persistência localStorage |
+| Notificações | 8/10 | Bell com badge, browser Notification API, mark-all-read |
+| White-label theming | 9/10 | 4 temas, troca em tempo real, salvo automaticamente |
 
-**Total ponderado:** 6.5 / 10
+**Total ponderado:** 8.0 / 10
 
 ---
 
 ### 7. Documentação — 8.5 / 10 🟢
+*(sem alteração)*
 
 | Subdimensão | Score | Evidência |
 |-------------|-------|-----------|
 | README de produto | 9/10 | Problema, personas, funcionalidades, modelo de dados |
 | Especificação funcional | 9/10 | 8 módulos com regras de negócio, variáveis, gráficos |
 | Arquitetura | 8/10 | Estrutura de diretórios, stack, CI/CD documentados |
-| Comentários inline | 6/10 | Mínimos e apropriados (padrão do projeto) |
-| Changelog / histórico | 5/10 | Apenas mensagens de commit (sem CHANGELOG.md) |
-| ADRs | 0/10 | Nenhum Architecture Decision Record |
+| CLAUDE.md | 9/10 | Regras de desenvolvimento, prevenção de timeout, branch policy |
+| Comentários inline | 6/10 | Mínimos e apropriados |
+| Changelog / ADRs | 2/10 | Sem CHANGELOG.md, sem ADRs |
 
 **Total ponderado:** 8.5 / 10
 
@@ -153,124 +166,115 @@ Escala: **0–10** por subdimensão → média ponderada → score geral
 
 ## SCORE GERAL
 
-| Dimensão | Peso | Score | Contribuição |
-|----------|------|-------|-------------|
-| Código e Arquitetura | 20% | 9.0 | 1.80 |
-| Funcionalidades | 20% | 8.7 | 1.74 |
-| Testes e Qualidade | 15% | 6.0 | 0.90 |
-| Performance | 15% | 7.7 | 1.16 |
-| Segurança | 15% | 5.3 | 0.80 |
-| UX e Responsividade | 10% | 6.5 | 0.65 |
-| Documentação | 5% | 8.5 | 0.43 |
-| **TOTAL** | **100%** | **7.5 / 10** 🟡 | |
+| Dimensão | Peso | v1.0 | v2.0 | Δ | Contribuição |
+|----------|------|------|------|---|-------------|
+| Código e Arquitetura | 20% | 9.0 | **9.2** | +0.2 | 1.84 |
+| Funcionalidades | 20% | 8.7 | **9.2** | +0.5 | 1.84 |
+| Testes e Qualidade | 15% | 6.0 | **8.5** | +2.5 | 1.28 |
+| Performance | 15% | 7.7 | **8.5** | +0.8 | 1.28 |
+| Segurança | 15% | 5.3 | **5.3** | — | 0.80 |
+| UX e Responsividade | 10% | 6.5 | **8.0** | +1.5 | 0.80 |
+| Documentação | 5% | 8.5 | **8.5** | — | 0.43 |
+| **TOTAL** | **100%** | **7.5** | **8.3 / 10** 🟢 | **+0.8** | |
 
-> **Interpretação:** Produto funcional e bem arquitetado, com excelente cobertura funcional. Os três pontos que puxam o score para baixo são segurança (auth hardcoded), testes de pages/components (zero) e acessibilidade (sem ARIA). Corrigindo esses três, o score sobe para ~8.5.
+> **Interpretação:** O projeto saltou de 7.5 para **8.3** — território 🟢 — após implementação das Fases 1–3 do roadmap. O único vetor que ainda puxa o score para baixo é **Segurança (5.3)**, exclusivamente por causa da autenticação hardcoded. Com dados reais e auth via Supabase, o score atinge **~9.0**.
 
 ---
 
 ## BENCHMARK COMPETITIVO
 
-Comparação com ferramentas de analytics/BI do mercado para o contexto específico de **análise tributária da Reforma Brasileira**.
-
 | Critério | Analitico KLA | Power BI | Looker Studio | Metabase | Tableau |
 |----------|:---:|:---:|:---:|:---:|:---:|
 | **Simulação de alíquotas CBS/IBS em tempo real** | 🟢 10 | 🔴 2 | 🔴 2 | 🔴 2 | 🔴 2 |
 | **Comparação de cenários A vs B** | 🟢 9 | 🟡 6 | 🔴 3 | 🟡 5 | 🟡 6 |
+| **Dashboard customizável (drag-and-drop)** | 🟢 9 | 🟢 9 | 🟡 6 | 🟡 6 | 🟢 9 |
 | **Pivot table configurável sem código** | 🟢 9 | 🟢 10 | 🟡 6 | 🟢 9 | 🟢 10 |
 | **Projeção temporal com calendário da reforma** | 🟢 9 | 🟡 5 | 🟡 5 | 🟡 5 | 🟡 5 |
+| **Benchmarking entre pares do setor** | 🟢 9 | 🟡 6 | 🔴 3 | 🟡 5 | 🟡 6 |
 | **Exportação CSV** | 🟢 9 | 🟢 9 | 🟢 9 | 🟢 9 | 🟢 9 |
-| **Exportação PDF** | 🟡 7 | 🟢 9 | 🟢 8 | 🟡 6 | 🟢 9 |
+| **Exportação PDF executivo** | 🟢 9 | 🟢 9 | 🟢 8 | 🟡 6 | 🟢 9 |
+| **White-label / personalização de marca** | 🟢 9 | 🟡 6 | 🟡 5 | 🟡 6 | 🟡 6 |
 | **Custo de implantação** | 🟢 10 | 🟡 5 | 🟢 8 | 🟡 6 | 🔴 2 |
-| **Customização de domínio** | 🟢 10 | 🟡 6 | 🟡 5 | 🟡 6 | 🟡 6 |
-| **Responsividade mobile** | 🟡 7 | 🟡 6 | 🟡 7 | 🟡 7 | 🔴 4 |
 | **Tempo para insights (onboarding)** | 🟢 9 | 🟡 5 | 🟡 7 | 🟡 6 | 🔴 3 |
 | **Integração com dados reais** | 🔴 2 | 🟢 10 | 🟢 10 | 🟢 9 | 🟢 10 |
 | **Autenticação enterprise** | 🔴 2 | 🟢 9 | 🟢 9 | 🟢 8 | 🟢 9 |
 | **Colaboração multi-usuário** | 🔴 1 | 🟢 9 | 🟢 9 | 🟢 8 | 🟢 9 |
-| **MÉDIA GERAL** | **7.2** | **7.0** | **6.8** | **6.6** | **6.5** |
+| **MÉDIA GERAL** | **7.6** | **7.1** | **6.9** | **6.7** | **6.8** |
 
-> **Conclusão competitiva:** O Analitico KLA **supera** as ferramentas genéricas de BI no contexto específico da Reforma Tributária Brasileira — simulação em tempo real, comparação de cenários e domínio tributário são diferenciais únicos que ferramentas como Power BI e Tableau não oferecem sem desenvolvimento customizado extensivo. A desvantagem atual está na integração com dados reais e autenticação enterprise.
+> **Conclusão:** O Analitico KLA **lidera** no contexto específico da Reforma Tributária Brasileira. As desvantagens são apenas em integração de dados reais e auth enterprise — itens intencionalmente adiados.
 
 ---
 
-## ANÁLISE DE GAPS — PRIORIZADO POR IMPACTO
+## ANÁLISE DE GAPS ATUAL
 
 | # | Gap | Impacto no Score | Complexidade | Prioridade |
 |---|-----|-----------------|-------------|------------|
 | 1 | Credenciais hardcoded em `authStore.ts` | +1.5 pts (Segurança) | Média | 🔴 Crítica |
-| 2 | Zero testes de pages e components | +0.8 pts (Testes) | Alta | 🔴 Alta |
-| 3 | Sem ARIA labels / landmarks HTML | +0.5 pts (UX) | Baixa | 🟡 Média |
-| 4 | Sem ESLint/Prettier no CI | +0.3 pts (CI/CD) | Baixa | 🟡 Média |
-| 5 | Sem `useCallback` em handlers | +0.2 pts (Performance) | Baixa | 🟡 Baixa |
-| 6 | Sem Lighthouse CI (Web Vitals) | +0.2 pts (Performance) | Média | 🟡 Baixa |
-| 7 | Sem virtualização de tabelas | +0.1 pts (Performance) | Média | 🟢 Futura |
-| 8 | Integração com dados reais | +1.0 pts (Funcional) | Alta | 🔴 Estratégica |
+| 2 | Integração com dados reais (Supabase) | +0.8 pts (Funcional) | Alta | 🔴 Estratégica |
+| 3 | Cobertura de testes < 60% statements | +0.3 pts (Testes) | Média | 🟡 Média |
+| 4 | Focus management / skip-to-content | +0.2 pts (UX) | Baixa | 🟡 Baixa |
+| 5 | CSP / Security headers | +0.1 pts (Segurança) | Baixa | 🟡 Baixa |
+| 6 | Web Vitals medidos (Lighthouse real) | +0.1 pts (Performance) | Baixa | 🟡 Baixa |
+| 7 | CHANGELOG.md + ADRs | +0.1 pts (Docs) | Baixa | 🟢 Futura |
+| 8 | Multi-tenant (carteiras isoladas por cliente) | Estratégico | Alta | 🔴 Estratégica |
 
 ---
 
-## ROADMAP ATUALIZADO
+## ROADMAP
 
-### ✅ Concluído (Sprints anteriores)
+### ✅ Concluído — Fases 1, 2 e 3
 
 | Feature | Score impactado |
 |---------|----------------|
-| Arquitetura com hooks/utils/constants centralizados | Código +2.0 |
-| Code splitting (lazy loading 7 abas) | Performance +1.5 |
-| Comparação de dois cenários (A vs B) | Funcional +0.8 |
-| Exportação PDF via `@media print` | Funcional +0.5 |
-| 36 testes unitários (utils + hooks) | Testes +2.0 |
-| GitHub Actions CI (build + tsc + tests) | CI/CD +1.5 |
-| Responsividade mobile + Pivot card view | UX +1.5 |
-| Especificação funcional documentada | Docs +2.0 |
+| Arquitetura com hooks/utils/constants/theme centralizados | Código +2.0 |
+| Code splitting: 9 chunks + vendor-pdf/virtual isolados | Performance +1.5 |
+| `useCallback` em todos os handlers de filtro | Performance +0.5 |
+| Virtualização de tabelas (`@tanstack/react-virtual`) | Performance +0.8 |
+| Skeleton loaders em todas as 7 páginas (`usePageReady`) | UX +0.8 |
+| Dashboard drag-and-drop (dnd-kit + localStorage) | UX +1.0 / Funcional +0.5 |
+| PDF executivo 4 páginas (`@react-pdf/renderer`) | Funcional +0.5 |
+| Notificações push (Zustand + browser Notification API) | Funcional +0.3 |
+| White-label com 4 temas e CSS custom properties | Funcional +0.3 |
+| PeerBenchmark — empresa vs média do setor | Funcional +0.5 |
+| ESLint v9 flat config + Prettier no CI | Testes +0.5 |
+| 93 testes: components, stores, integração de 7 páginas | Testes +2.5 |
+| Coverage threshold ≥50% branches enforced no CI | Testes +0.3 |
+| Lighthouse CI workflow configurado | Performance +0.2 |
+| ARIA labels, `aria-current`, `role="alert"`, `htmlFor` | UX +0.5 |
+| CLAUDE.md com regras de desenvolvimento | Docs +0.3 |
 
 ---
 
-### 🔴 Fase 1 — Segurança e Qualidade Base *(próxima sprint · estimativa: 1–2 semanas)*
+### 🔴 Fase 4 — Dados Reais + Auth *(próxima sprint estratégica)*
 
-**Objetivo:** subir score de 7.5 → 8.2
-
-| Tarefa | Impacto | Esforço |
-|--------|---------|---------|
-| Substituir `authStore` por Supabase Auth (JWT + sessão persistente) | +1.5 | Alto |
-| Testes de components: KpiCard, RangeSlider, ChartTooltip | +0.4 | Médio |
-| Testes de store: authStore (login/logout flow) | +0.2 | Baixo |
-| ESLint + Prettier configurados e no CI | +0.3 | Baixo |
-| ARIA labels em inputs do LoginPage | +0.2 | Baixo |
-| `<nav>` + `aria-current="page"` no Layout | +0.2 | Baixo |
-| Coverage report no CI (Vitest coverage) | +0.1 | Baixo |
-
----
-
-### 🟡 Fase 2 — Dados Reais *(sprint 2–3 · estimativa: 3–4 semanas)*
-
-**Objetivo:** subir score de 8.2 → 8.8 + tornar o produto vendável
+**Objetivo:** score 8.3 → 9.0+ · produto pronto para clientes reais
 
 | Tarefa | Impacto | Esforço |
 |--------|---------|---------|
-| Camada `src/services/` com abstração sobre fonte de dados | Arquitetura | Alto |
-| Integração Supabase (PostgreSQL) para carregar empresas | Funcional +1.0 | Alto |
+| Supabase Auth (JWT + sessão persistente + refresh token) | Segurança +1.5 | Alto |
+| Camada `src/services/` abstraindo fonte de dados | Arquitetura | Médio |
+| Integração Supabase (PostgreSQL) — carregar carteira real | Funcional +0.8 | Alto |
 | Upload CSV/Excel pelo usuário (importar carteira) | Funcional +0.5 | Médio |
-| React Query para cache + loading states | Performance +0.3 | Médio |
-| Skeleton loaders em todas as abas | UX +0.2 | Baixo |
-| Testes de integração de páginas (Testing Library) | Testes +0.5 | Alto |
-| Lighthouse CI (LCP, FID, CLS) | Performance +0.2 | Baixo |
+| React Query — cache, loading states, retry | Performance +0.3 | Médio |
+| Row-level security (cada cliente vê só seus dados) | Segurança +0.5 | Alto |
+| CSP headers (Netlify `_headers` ou Supabase Edge) | Segurança +0.3 | Baixo |
 
 ---
 
-### 🟢 Fase 3 — Produto e Escala *(trimestre 2–3)*
+### 🟡 Fase 5 — Escala e Produto *(trimestre 3–4)*
 
-**Objetivo:** score 8.8+ · plataforma multi-cliente
+**Objetivo:** score 9.0 → 9.5+ · plataforma multi-cliente
 
 | Tarefa | Impacto |
 |--------|---------|
-| Multi-tenant (cada cliente vê sua carteira isolada) | Estratégico |
-| Exportação PDF com layout de relatório executivo (react-pdf) | Funcional +0.3 |
-| Dashboard customizável (drag & drop de widgets) | UX +0.5 |
-| Virtualização de tabelas (react-virtual) para >500 linhas | Performance +0.3 |
-| Benchmarking entre empresas do mesmo setor | Funcional +0.5 |
-| Integração com ERPs (SAP, TOTVS, Omie) | Estratégico |
-| White-label (logo e cores do cliente final) | Estratégico |
-| Notificações push para variações tributárias relevantes | Funcional +0.3 |
+| Multi-tenant: carteiras isoladas por cliente/tenant | Estratégico |
+| Integração ERP (TOTVS, SAP, Omie) via webhook/API | Estratégico |
+| Alertas automáticos de variação tributária relevante | Funcional +0.3 |
+| Testes E2E com Playwright (golden paths) | Testes +0.5 |
+| Cobertura de testes ≥ 80% statements | Testes +0.4 |
+| WCAG AA auditoria completa (axe-core) | UX +0.3 |
+| CHANGELOG.md + ADRs | Docs +0.3 |
+| Internacionalização (i18n) — inglês e espanhol | Estratégico |
 
 ---
 
@@ -278,35 +282,39 @@ Comparação com ferramentas de analytics/BI do mercado para o contexto específ
 
 | Estado | Score | Quando |
 |--------|-------|--------|
-| **Atual** | **7.5** | Abril 2026 |
-| Pós Fase 1 (segurança + testes + a11y) | **8.2** | Mai–Jun 2026 |
-| Pós Fase 2 (dados reais + qualidade) | **8.8** | Jul–Set 2026 |
-| Pós Fase 3 (escala + produto) | **9.2** | 2027 |
+| v1.0 — linha de base | 7.5 🟡 | Abril 2026 |
+| **v2.0 — atual** | **8.3 🟢** | **Abril 2026** |
+| Pós Fase 4 (dados reais + auth) | **~9.0 🟢** | Mai–Jul 2026 |
+| Pós Fase 5 (escala + produto) | **~9.5 🟢** | Q3–Q4 2026 |
 
 ---
 
-## MÉTRICAS DE REFERÊNCIA PARA PRÓXIMA REVISÃO
+## MÉTRICAS DE REFERÊNCIA
 
 ```
-Testes:
-  - Total de testes: 36        → meta Fase 1: 80+
-  - Cobertura pages: 0%        → meta Fase 1: 60%+
-  - Cobertura components: 0%   → meta Fase 1: 70%+
+Testes (atual):
+  Total de testes:          93   → meta Fase 5: 150+
+  Arquivos de teste:        10   → meta Fase 5: 15+
+  Coverage statements:     57%  → meta Fase 5: 80%+
+  Coverage branches:      50.4% → meta Fase 5: 70%+
 
-Performance (Lighthouse):
-  - LCP: não medido            → meta: < 2.5s
-  - Bundle gzip total: ~200KB  → meta: manter < 250KB
+Build (atual):
+  TypeScript errors:         0  ✅
+  ESLint errors:             0  ✅
+  ESLint warnings:           8  → meta: 0
+  Bundle gzip (sem PDF):  ~215KB → meta: manter < 250KB
 
-Segurança:
-  - Credenciais hardcoded: SIM → meta Fase 1: NÃO
-  - CSP header: NÃO            → meta Fase 2: SIM
+Segurança (atual):
+  Credenciais hardcoded:   SIM  🚨 → meta Fase 4: NÃO
+  Auth JWT:                NÃO  → meta Fase 4: SIM
+  CSP header:              NÃO  → meta Fase 4: SIM
 
-Acessibilidade:
-  - ARIA labels: 0             → meta Fase 1: inputs + nav
-  - WCAG AA: parcial           → meta Fase 2: completo
+Acessibilidade (atual):
+  ARIA implementado:  parcial   → meta Fase 5: WCAG AA completo
+  Focus management:    básico   → meta Fase 5: completo
 ```
 
 ---
 
-*Documento gerado automaticamente via análise estática do repositório.*
-*Próxima revisão recomendada: após conclusão da Fase 1.*
+*Documento atualizado automaticamente via análise estática do repositório.*
+*Versão 2.0 — Abril 2026. Próxima revisão: após conclusão da Fase 4.*

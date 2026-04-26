@@ -39,4 +39,27 @@ describe('KpiCard', () => {
     const { container } = render(<KpiCard label="X" value="Y" icon={<span />} />)
     expect(container.querySelector('.bg-primary-100')).toBeTruthy()
   })
+
+  it('renders negative delta badge with down color', () => {
+    const { container } = render(<KpiCard label="X" value="Y" icon={<span />} delta={-5.3} />)
+    expect(container.querySelector('.text-accent-down')).toBeTruthy()
+    expect(screen.getByText(/-5\.3%/)).toBeInTheDocument()
+  })
+
+  it('renders positive delta badge with up color', () => {
+    const { container } = render(<KpiCard label="X" value="Y" icon={<span />} delta={3.2} />)
+    expect(container.querySelector('.text-accent-up')).toBeTruthy()
+    expect(screen.getByText(/\+3\.2%/)).toBeInTheDocument()
+  })
+
+  it('renders zero delta badge', () => {
+    const { container } = render(<KpiCard label="X" value="Y" icon={<span />} delta={0} />)
+    expect(container.querySelector('.text-ink-400')).toBeTruthy()
+    expect(screen.getByText('+0.0%')).toBeInTheDocument()
+  })
+
+  it('does not render delta badge when delta is undefined', () => {
+    render(<KpiCard label="X" value="Y" icon={<span />} />)
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument()
+  })
 })

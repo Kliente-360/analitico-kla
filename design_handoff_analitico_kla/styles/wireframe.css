@@ -1,0 +1,122 @@
+/* Wireframe-medium primitives — sketchy borders + brand color glimpses */
+
+.wf-frame {
+  background: var(--paper);
+  border: 1.25px solid var(--ink-300);
+  border-radius: var(--radius-md);
+  position: relative;
+}
+.wf-frame--sketch {
+  border-style: dashed;
+  border-color: var(--ink-400);
+}
+.wf-frame--brand {
+  border-color: var(--kla-primary);
+  border-width: 1.5px;
+}
+
+/* Placeholder block (dashed crosshatch ish) */
+.wf-ph {
+  background:
+    repeating-linear-gradient(135deg,
+      var(--ink-100) 0 6px,
+      var(--ink-50) 6px 12px);
+  border: 1px dashed var(--ink-300);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-500);
+  text-align: center;
+  padding: 8px;
+  min-height: 60px;
+}
+.wf-ph--brand {
+  background:
+    repeating-linear-gradient(135deg,
+      var(--kla-primary-100) 0 6px,
+      var(--paper) 6px 12px);
+  border-color: var(--kla-primary-300);
+  color: var(--kla-primary-600);
+}
+
+/* Sketchy chart placeholder primitives */
+.wf-bar { background: var(--ink-200); border-radius: 2px; }
+.wf-bar--brand { background: var(--kla-primary); }
+.wf-bar--up { background: var(--kla-accent-up); }
+.wf-bar--down { background: var(--kla-accent-down); }
+
+.wf-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-500);
+  text-transform: uppercase;
+}
+.wf-cap {
+  font-family: var(--font-sketch);
+  color: var(--kla-primary);
+  font-size: 18px;
+  line-height: 1;
+}
+.wf-h {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--ink-900);
+  letter-spacing: -0.01em;
+}
+.wf-num {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--ink-900);
+  font-feature-settings: "tnum";
+  letter-spacing: -0.02em;
+}
+
+/* Annotation arrow + post-it style note */
+.wf-note {
+  background: #fef9c3;
+  border: 1px solid #eab308;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: var(--font-sketch);
+  font-size: 14px;
+  color: #6b5510;
+  transform: rotate(-1.2deg);
+  box-shadow: var(--shadow-sm);
+}
+
+.wf-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ink-300);
+  background: var(--paper);
+  font-size: 12px;
+  color: var(--ink-700);
+}
+.wf-pill--active {
+  background: var(--kla-primary);
+  color: white;
+  border-color: var(--kla-primary);
+}
+
+.wf-divider {
+  height: 1px;
+  background: var(--ink-200);
+  border: none;
+  margin: 0;
+}
+
+/* Skeleton-ish "data line" for table rows */
+.wf-line {
+  height: 8px;
+  background: var(--ink-200);
+  border-radius: 2px;
+}
+.wf-line--sm { height: 6px; }
+.wf-line--brand { background: var(--kla-primary-300); }

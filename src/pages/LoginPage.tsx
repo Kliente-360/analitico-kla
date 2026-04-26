@@ -92,6 +92,7 @@ export default function LoginPage() {
                 placeholder="seu@email.com"
                 required
                 autoComplete="email"
+                aria-label="E-mail"
               />
             </div>
 
@@ -109,6 +110,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
+                  aria-label="Senha"
                 />
                 <button
                   type="button"
