@@ -8,7 +8,7 @@ function LoginPage() {
     <div style={{ width: 1280, height: 820, display: 'grid', gridTemplateColumns: '1fr 1.1fr', background: 'var(--paper)' }}>
       {/* left brand panel */}
       <div style={{
-        background: 'linear-gradient(160deg, var(--kla-primary) 0%, var(--kla-primary-600) 100%)',
+        background: 'linear-gradient(160deg, var(--kla-ink) 0%, var(--kla-ink-700) 100%)',
         color: 'white', padding: 60, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'white' }}>
@@ -436,7 +436,7 @@ function TrendsPage() {
       </div>
 
       {/* impacto acumulado callout */}
-      <div className="wf-frame wf-frame--brand" style={{ padding: 18, background: 'linear-gradient(180deg, var(--kla-primary-100) 0%, var(--paper) 100%)', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+      <div className="wf-frame wf-frame--brand" style={{ padding: 18, background: 'var(--paper)', borderLeft: '4px solid var(--kla-primary)', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24, alignItems: 'center' }}>
         <div>
           <div className="wf-label">Economia acumulada 2025-2033</div>
           <div className="wf-num" style={{ fontSize: 32, color: 'var(--kla-accent-down)' }}>R$ 84,3 M</div>

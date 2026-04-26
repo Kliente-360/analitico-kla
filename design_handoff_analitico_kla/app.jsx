@@ -48,9 +48,9 @@ function PlanCard() {
         <div>
           <div className="wf-label" style={{ marginBottom: 8 }}>Direção visual</div>
           <ul style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--ink-700)', margin: 0, paddingLeft: 16 }}>
-            <li>Azul Kliente 360 (#0B3D8C) institucional</li>
+            <li>Vermelho cliente <strong>#E30613</strong> — usado com parcimônia (ações, ênfase, indicadores)</li>
+            <li>Carvão institucional <strong>#1A1D24</strong> em áreas grandes (hero login, cabeçalhos)</li>
             <li>Type: Inter (UI) + Fraunces (números executivos)</li>
-            <li>Tom corporativo sóbrio · densidade alta · foco em dados</li>
             <li>Modo claro/escuro + cor primária ajustável (Tweaks)</li>
           </ul>
         </div>
@@ -101,18 +101,17 @@ function PlanCard() {
 }
 
 function App() {
-  const tweaks = useTweaks(window.TWEAK_DEFAULTS || { primary: '#0b3d8c', dark: false });
+  const tweaks = useTweaks(window.TWEAK_DEFAULTS || { primary: '#e30613', dark: false });
 
   // aplica tweaks ao documento
   React.useEffect(() => {
-    document.documentElement.style.setProperty('--kla-primary', tweaks.primary);
-    // recompute light variants
     const el = document.documentElement;
+    el.style.setProperty('--kla-primary', tweaks.primary);
     el.style.setProperty('--kla-primary-100', tweaks.primary + '1f');
     el.style.setProperty('--kla-primary-300', tweaks.primary + '88');
     el.style.setProperty('--kla-primary-500', tweaks.primary);
     el.style.setProperty('--kla-primary-600', tweaks.primary);
-    document.documentElement.setAttribute('data-theme', tweaks.dark ? 'dark' : 'light');
+    el.setAttribute('data-theme', tweaks.dark ? 'dark' : 'light');
   }, [tweaks.primary, tweaks.dark]);
 
   return (

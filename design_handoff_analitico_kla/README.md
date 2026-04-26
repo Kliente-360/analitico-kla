@@ -7,6 +7,25 @@
 
 ---
 
+## 0. Status de implementação (2026-04-25)
+
+| Sprint | Escopo | Status |
+|---|---|---|
+| 1 — Foundation | Tokens, Sidebar, Topbar, KpiCard, dark mode store | ✅ Concluído |
+| 2 — Core analytics | Dashboard hero narrativo, Pivot heatmap, Cenários A/B | ✅ Concluído |
+| 3 — Resto | Login redesign, Setor, Regional (treemap), Tendências, Dados Brutos | ✅ Concluído |
+| 4 — Polish | Responsividade, estados loading/erro, animações, testes | 🟡 Parcial (testes + lint OK; animações e empty states pendentes) |
+
+### Desvios deliberados em relação ao spec original
+
+- **Brand primária:** **vermelho institucional `#e30613`** (era `#0b3d8c` azul no spec original). Wireframes nesta pasta já refletem a paleta nova (`tokens.css`, `app.jsx`, `dashboard.jsx`, `extra-pages.jsx`, `mobile.jsx` atualizados).
+- **Hero do Dashboard:** usa `--kla-ink` (carvão) com texto branco, não gradiente vermelho — alinhado à regra "vermelho com parcimônia". Hero do Login: painel sólido `bg-primary-700` (não gradiente azul).
+- **Login:** título atual é _"Bem-vindo de volta"_ (não _"Entrar no portal"_). Inclui chips de features (CBS/IBS, Filiais & UFs, Cenários A/B). **Sem botão SSO Salesforce** nesta fase.
+- **Sidebar:** rótulos finais são `Setor` / `Regional` / `Tendências` (em vez de `Por Linha de Negócio` / `Por Filial / UF`) — termos curtos para o nav. Conteúdo das telas mantém a premissa single-tenant.
+- **Constantes legadas:** `CHART_COLORS` e `BUSINESS_LINE_COLORS` em `src/constants.ts` ainda contêm tons azuis — refatorar para a paleta vermelho/neutros em sprint de polish.
+
+---
+
 ## 1. Sobre estes arquivos
 
 Os arquivos HTML/JSX deste pacote são **referências de design** — protótipos visuais
@@ -45,29 +64,57 @@ Implicações práticas:
 
 ### 3.1 Cores (CSS variables)
 
+**Filosofia:** vermelho institucional do cliente (`#E30613`) é cor primária de marca,
+mas usado com **parcimônia** — nunca como preenchimento de cards grandes (é agressivo
+aos olhos em áreas grandes). Vermelho aparece em: ações primárias (botões, links),
+barras laterais de ênfase (3-4px), ícones, números-chave, títulos curtos, segmento
+principal de gráficos. Para áreas grandes (hero do login, cabeçalhos, fundos
+de seção) usa-se **carvão institucional** (`--kla-ink`).
+
 ```css
---kla-primary:       #0b3d8c;  /* azul institucional Kliente */
---kla-primary-600:   #0a3275;
---kla-primary-500:   #0f4cab;
---kla-primary-300:   #6e9bdb;
---kla-primary-100:   #e6efff;
+/* Brand — vermelho cliente */
+--kla-primary:       #e30613;   /* primário (ações, ênfase) */
+--kla-primary-700:   #a8040e;   /* hover/active */
+--kla-primary-600:   #c4040f;
+--kla-primary-500:   #e30613;
+--kla-primary-400:   #ed4a52;   /* gráfico secundário */
+--kla-primary-300:   #f48a8f;
+--kla-primary-200:   #fac4c7;
+--kla-primary-100:   #fde9eb;   /* tint de hover/seleção (uso pontual) */
+--kla-primary-50:    #fef4f5;
 
---kla-accent-up:     #d04a3b;  /* aumento de carga (negativo) */
---kla-accent-down:   #1f7a5a;  /* redução de carga (positivo) */
---kla-accent-warn:   #b87514;  /* alerta */
+/* Carvão institucional — fundos grandes de marca */
+--kla-ink:           #1a1d24;   /* hero login, cabeçalhos brand */
+--kla-ink-700:       #2c3038;
+--kla-ink-500:       #4a4f5a;
 
---ink-900: #0f1722;  /* texto principal */
---ink-700: #2c3848;  /* texto secundário forte */
---ink-500: #5a6779;  /* texto auxiliar */
---ink-400: #8390a3;  /* placeholder */
---ink-300: #b3bccb;  /* borders fortes */
---ink-200: #d8dee8;  /* borders padrão */
---ink-100: #eceff5;  /* divider */
---ink-50:  #f6f8fb;  /* bg seção */
---paper:   #ffffff;  /* bg card */
+/* Semântica de variação tributária — separada da brand */
+--kla-accent-up:     #c0392b;   /* aumento de carga (ruim) — terroso pra não brigar com brand */
+--kla-accent-down:   #1f7a5a;   /* redução de carga (bom) */
+--kla-accent-warn:   #b87514;   /* alerta */
+
+/* Neutros levemente quentes */
+--ink-900: #14171c;
+--ink-700: #2f343d;
+--ink-500: #5a6068;
+--ink-400: #828892;
+--ink-300: #b6bac2;
+--ink-200: #dadde2;
+--ink-100: #ecedf0;
+--ink-50:  #f7f7f8;
+--paper:   #ffffff;
 ```
 
 Ver arquivo completo + tema dark em `styles/tokens.css`.
+
+**Regras de uso do vermelho:**
+- ✅ Botões primários, links, badges de ação, eyebrows curtos, ícones
+- ✅ Barras laterais de ênfase (3-4px) em cards hero
+- ✅ Maior segmento de gráficos (não todos os segmentos)
+- ✅ Números-chave com peso 600+
+- ❌ Fundos grandes de cards ou hero — use `--paper` ou `--kla-ink`
+- ❌ Multi-séries em gráficos — use neutros + 1 vermelho
+- ❌ Cabeçalhos inteiros pintados — use carvão
 
 **Tweaks runtime:** cor primária e modo claro/escuro são controláveis pelo usuário.
 A implementação real deve expor isso como configuração de workspace ou preferência
@@ -93,8 +140,8 @@ Tabular numerals em todos os números: `font-feature-settings: "tnum"`.
 ### 3.4 Cor + significado
 
 - **Variação tributária negativa (redução de carga = bom):** verde `--kla-accent-down`.
-- **Variação tributária positiva (aumento = ruim):** vermelho `--kla-accent-up`.
-- **Reforma:** sempre azul Kliente. **Atual:** sempre cinza `--ink-500`.
+- **Variação tributária positiva (aumento = ruim):** terroso `--kla-accent-up` (não usar `--kla-primary` para isso, evita conflito de leitura).
+- **Reforma:** sempre vermelho `--kla-primary`. **Atual:** sempre cinza `--ink-500`.
 - **Cenário A** em comparações A/B: `#0a8f6e`. **Cenário B:** `#c9532f`.
 
 ---
@@ -440,30 +487,30 @@ persistência em `localStorage` ou no perfil do backend.
 
 ## 10. Plano de implementação sugerido
 
-### Sprint 1 — Foundation (1 sem)
-1. Importar tokens do `styles/tokens.css` para `tailwind.config.js` (extend theme.colors).
-2. Adicionar fontes Inter + Fraunces + JetBrains Mono via Google Fonts.
-3. Refatorar `Layout.tsx` com novo Sidebar + Topbar (tela 4).
-4. Atualizar `KpiCard` para o novo visual.
-5. Implementar tweaks (cor primária + dark mode) via Zustand.
+### Sprint 1 — Foundation ✅
+1. ✅ Importar tokens do `styles/tokens.css` para `tailwind.config.js` (extend theme.colors).
+2. ✅ Adicionar fontes Inter + Fraunces + JetBrains Mono via Google Fonts.
+3. ✅ Refatorar `Layout.tsx` com novo Sidebar + Topbar.
+4. ✅ Atualizar `KpiCard` para o novo visual.
+5. ✅ Implementar tweaks (cor primária + dark mode) via Zustand (`themeStore`).
 
-### Sprint 2 — Core analytics (2 sem)
-6. Refazer Dashboard Executivo com Hero narrativo (tela 01).
-7. Refazer Pivot com heatmap + insight strip (tela 02).
-8. Refazer Simulação A/B com sliders + comparação 4-barras (tela 03).
+### Sprint 2 — Core analytics ✅
+6. ✅ Refazer Dashboard Executivo com Hero narrativo (tela 01).
+7. ✅ Refazer Pivot com heatmap + insight strip (tela 02).
+8. ✅ Refazer Simulação A/B com sliders + comparação 4-barras (tela 03).
 
-### Sprint 3 — Resto (1.5 sem)
-9. Login redesenhado (tela 00).
-10. Setor / Linha de Negócio (tela 04).
-11. Regional com treemap (tela 05).
-12. Tendências com timeline + marcos (tela 06).
-13. Dados Brutos com export CSV (tela 07).
+### Sprint 3 — Resto ✅
+9. ✅ Login redesenhado (tela 00).
+10. ✅ Setor / Linha de Negócio (tela 04).
+11. ✅ Regional com treemap (tela 05).
+12. ✅ Tendências com timeline + marcos (tela 06).
+13. ✅ Dados Brutos com export CSV (tela 07).
 
-### Sprint 4 — Polish (1 sem)
-14. Responsividade completa (breakpoints mobile/tablet).
-15. Estados de loading, erro, vazio em todas as telas.
-16. Animações (transições suaves entre rotas, sliders com debounce).
-17. Testes (Vitest) cobrindo cálculos da reforma e formatação.
+### Sprint 4 — Polish 🟡
+14. 🟡 Responsividade — desktop/tablet OK; mobile bottom-tab pendente.
+15. ⬜ Estados de loading, erro, vazio em todas as telas.
+16. ⬜ Animações (transições entre rotas, sliders com debounce).
+17. ✅ Testes (Vitest) — cobertura ≥ 50% branch, KpiCard/Pivot/themeStore/pages cobertos. CI/lint verdes.
 
 ---
 

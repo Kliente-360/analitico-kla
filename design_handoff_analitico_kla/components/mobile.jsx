@@ -25,7 +25,7 @@ function MobileDashboard() {
       {/* content scrollable */}
       <div style={{ flex: 1, overflow: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Hero */}
-        <div className="wf-frame wf-frame--brand" style={{ padding: 14, background: 'linear-gradient(180deg, var(--kla-primary-100) 0%, var(--paper) 100%)' }}>
+        <div className="wf-frame wf-frame--brand" style={{ padding: 14, background: 'var(--paper)', borderLeft: '3px solid var(--kla-primary)' }}>
           <div className="wf-label" style={{ color: 'var(--kla-primary)' }}>Impacto · Reforma</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, lineHeight: 1.15, margin: '6px 0', letterSpacing: '-0.01em' }}>
             <span style={{ color: 'var(--kla-accent-down)' }}>−R$ 4,2 M</span> em impostos pós-reforma

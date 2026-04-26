@@ -23,7 +23,8 @@ function KpiCard({ label, value, unit, delta, deltaLabel, tone = 'neutral', big 
 function HeroImpact() {
   return (
     <div className="wf-frame wf-frame--brand" style={{
-      padding: 22, background: 'linear-gradient(180deg, var(--kla-primary-100) 0%, var(--paper) 100%)',
+      padding: 22, background: 'var(--paper)',
+      borderLeft: '4px solid var(--kla-primary)',
       gridColumn: 'span 12', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24, alignItems: 'center',
     }}>
       <div>
@@ -90,11 +91,11 @@ function ChartCard({ title, subtitle, span = 6, height = 200, children, footer }
 }
 
 function CompositionDonut() {
-  // Sketchy donut — segments via conic-gradient
+  // Donut — brand vermelho só no maior segmento, restante em carvão/neutros
   const segments = [
     { label: 'ICMS', val: 38, color: 'var(--kla-primary)' },
-    { label: 'COFINS', val: 22, color: 'var(--kla-primary-500)' },
-    { label: 'PIS', val: 10, color: 'var(--kla-primary-300)' },
+    { label: 'COFINS', val: 22, color: 'var(--kla-ink)' },
+    { label: 'PIS', val: 10, color: 'var(--kla-ink-500)' },
     { label: 'IRPJ', val: 16, color: 'var(--ink-500)' },
     { label: 'CSLL', val: 9, color: 'var(--ink-400)' },
     { label: 'ISS', val: 5, color: 'var(--ink-300)' },
