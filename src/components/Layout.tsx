@@ -368,9 +368,11 @@ export default function Layout() {
             {darkMode ? <Sun size={16} /> : <Moon size={16} />}
           </button>
 
-          <Suspense fallback={null}>
-            <ExportPdfButton />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={null}>
+              <ExportPdfButton />
+            </Suspense>
+          </ErrorBoundary>
 
           <button
             onClick={() => window.print()}

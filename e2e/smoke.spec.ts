@@ -1,4 +1,13 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
+
+async function login(page: Page) {
+  await page.goto('/')
+  await page.getByLabel('E-mail').fill('admin@kliente360.com')
+  await page.getByLabel('Senha').fill('admin123')
+  await page.getByRole('button', { name: /entrar/i }).click()
+  // Wait for the 500 ms simulated auth delay then the dashboard KPI to appear
+  await expect(page.getByText('Receita total')).toBeVisible({ timeout: 10000 })
+}
 
 test.describe('Login flow', () => {
   test('shows login page on first load', async ({ page }) => {
@@ -15,12 +24,8 @@ test.describe('Login flow', () => {
   })
 
   test('logs in with admin credentials and reaches dashboard', async ({ page }) => {
-    await page.goto('/')
-    await page.getByLabel('E-mail').fill('admin@kliente360.com')
-    await page.getByLabel('Senha').fill('admin123')
-    await page.getByRole('button', { name: /entrar/i }).click()
-    await page.waitForLoadState('networkidle')
-    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 8000 })
+    await login(page)
+    await expect(page.getByText('Carga atual')).toBeVisible()
   })
 
   test('shows error on wrong credentials', async ({ page }) => {
@@ -34,12 +39,7 @@ test.describe('Login flow', () => {
 
 test.describe('Navigation', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    await page.getByLabel('E-mail').fill('admin@kliente360.com')
-    await page.getByLabel('Senha').fill('admin123')
-    await page.getByRole('button', { name: /entrar/i }).click()
-    await page.waitForLoadState('networkidle')
-    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 8000 })
+    await login(page)
   })
 
   test('navigates to Pivot Table page', async ({ page }) => {
@@ -66,30 +66,18 @@ test.describe('Navigation', () => {
 test.describe('Accessibility', () => {
   test('skip-to-content link is present', async ({ page }) => {
     await page.goto('/')
-    const skipLink = page.getByText('Ir para o conteúdo principal')
-    await expect(skipLink).toBeAttached()
+    await expect(page.getByText('Ir para o conteúdo principal')).toBeAttached()
   })
 
-  test('dashboard has no detectable heading structure issues', async ({ page }) => {
-    await page.goto('/')
-    await page.getByLabel('E-mail').fill('admin@kliente360.com')
-    await page.getByLabel('Senha').fill('admin123')
-    await page.getByRole('button', { name: /entrar/i }).click()
-    await page.waitForLoadState('networkidle')
-    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 8000 })
-    const h2 = page.getByRole('heading', { level: 2 })
-    await expect(h2.first()).toBeVisible()
+  test('dashboard has h2 headings', async ({ page }) => {
+    await login(page)
+    await expect(page.getByRole('heading', { level: 2 }).first()).toBeVisible()
   })
 })
 
 test.describe('RawDataPage', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    await page.getByLabel('E-mail').fill('admin@kliente360.com')
-    await page.getByLabel('Senha').fill('admin123')
-    await page.getByRole('button', { name: /entrar/i }).click()
-    await page.waitForLoadState('networkidle')
-    await expect(page.getByText('Receita total')).toBeVisible({ timeout: 8000 })
+    await login(page)
     await page.getByText('Dados Brutos').click()
     await expect(page.getByPlaceholder(/Buscar/)).toBeVisible({ timeout: 8000 })
   })
@@ -99,14 +87,12 @@ test.describe('RawDataPage', () => {
   })
 
   test('search filters the table', async ({ page }) => {
-    const input = page.getByPlaceholder(/Buscar/)
-    await input.fill('ZZZ_NOTEXIST')
+    await page.getByPlaceholder(/Buscar/).fill('ZZZ_NOTEXIST')
     await expect(page.getByText('Nenhuma filial encontrada')).toBeVisible()
   })
 
-  test('URL reflects filter state', async ({ page }) => {
-    const select = page.getByRole('combobox').first()
-    await select.selectOption('Varejo')
+  test('URL reflects sector filter', async ({ page }) => {
+    await page.getByRole('combobox').first().selectOption('Varejo')
     await expect(page).toHaveURL(/raw_sector=Varejo/)
   })
 })
