@@ -54,19 +54,19 @@ import RawDataPage    from '../pages/RawDataPage'
 import LoginPage      from '../pages/LoginPage'
 
 describe('DashboardPage', () => {
+  it('renders hero impact heading', () => {
+    render(<DashboardPage />)
+    expect(screen.getByText(/vai pagar/)).toBeInTheDocument()
+  })
+
   it('renders KPI cards', () => {
     render(<DashboardPage />)
-    expect(screen.getByText('Total de Empresas')).toBeInTheDocument()
+    expect(screen.getByText('Receita total')).toBeInTheDocument()
   })
 
-  it('renders restore button', () => {
+  it('renders insight cards', () => {
     render(<DashboardPage />)
-    expect(screen.getByTitle('Restaurar ordem padrão')).toBeInTheDocument()
-  })
-
-  it('renders sector revenue widget heading', () => {
-    render(<DashboardPage />)
-    expect(screen.getByText('Receita Total por Setor (R$ M)')).toBeInTheDocument()
+    expect(screen.getByText('Maior contribuinte')).toBeInTheDocument()
   })
 })
 
@@ -85,6 +85,24 @@ describe('PivotTablePage', () => {
     render(<PivotTablePage />)
     expect(screen.getAllByRole('button').length).toBeGreaterThan(0)
   })
+
+  it('toggles sort direction on button click', () => {
+    render(<PivotTablePage />)
+    fireEvent.click(screen.getByText(/Maior → Menor/))
+    expect(screen.getByText(/Menor → Maior/)).toBeInTheDocument()
+  })
+
+  it('switches to a delta metric', () => {
+    render(<PivotTablePage />)
+    const selects = screen.getAllByRole('combobox')
+    fireEvent.change(selects[2], { target: { value: 'taxDeltaPercent' } })
+    expect(screen.getAllByText(/Variação/).length).toBeGreaterThan(0)
+  })
+
+  it('renders insight strip with grand total label', () => {
+    render(<PivotTablePage />)
+    expect(screen.getByText('Grand total')).toBeInTheDocument()
+  })
 })
 
 describe('ScenarioPage', () => {
@@ -93,24 +111,23 @@ describe('ScenarioPage', () => {
     expect(screen.getAllByText(/CBS/).length).toBeGreaterThan(0)
   })
 
-  it('renders compare mode toggle button', () => {
+  it('shows Cenário A and B panels', () => {
     render(<ScenarioPage />)
-    expect(screen.getByText(/Comparar dois cenários/)).toBeInTheDocument()
-  })
-
-  it('activates compare mode when toggle is clicked', () => {
-    render(<ScenarioPage />)
-    const btn = screen.getByText(/Comparar dois cenários/)
-    fireEvent.click(btn)
-    expect(screen.getByText(/Modo Comparação ativado/)).toBeInTheDocument()
     expect(screen.getAllByText(/Cenário A/).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/Cenário B/).length).toBeGreaterThan(0)
   })
 
   it('shows simulation results summary cards', () => {
     render(<ScenarioPage />)
-    expect(screen.getByText('Regime Atual')).toBeInTheDocument()
-    expect(screen.getByText('Reforma Oficial')).toBeInTheDocument()
+    expect(screen.getAllByText('Regime atual').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Reforma oficial').length).toBeGreaterThan(0)
+  })
+
+  it('filters branches by sector', () => {
+    render(<ScenarioPage />)
+    const sectorSelect = screen.getByRole('combobox')
+    fireEvent.change(sectorSelect, { target: { value: 'Varejo' } })
+    expect(screen.getAllByText(/Varejo/).length).toBeGreaterThan(0)
   })
 })
 

@@ -1,10 +1,10 @@
 /* ─── Design tokens KLA ─────────────────────────────────────────────────── */
 :root {
-  --kla-primary:     #0b3d8c;
-  --kla-primary-600: #0a3275;
-  --kla-primary-500: #0f4cab;
-  --kla-primary-300: #6e9bdb;
-  --kla-primary-100: #e6efff;
+  --kla-primary:     #e30613;
+  --kla-primary-600: #d01010;
+  --kla-primary-500: #e81b1b;
+  --kla-primary-300: #f88080;
+  --kla-primary-100: #fde8e8;
 
   --kla-accent-up:   #d04a3b;
   --kla-accent-down: #1f7a5a;
@@ -24,9 +24,9 @@
   --shadow-md: 0 4px 14px rgba(15, 23, 34, 0.08);
 
   /* ThemeProvider runtime overrides */
-  --brand-primary-700: #0b3d8c;
-  --brand-primary-800: #0a3275;
-  --brand-primary-50:  #e6efff;
+  --brand-primary-700: #e30613;
+  --brand-primary-800: #b8040d;
+  --brand-primary-50:  #fde8e8;
 }
 
 [data-theme="dark"] {
@@ -39,7 +39,7 @@
   --ink-500: #98a4ba;
   --ink-700: #d6dde9;
   --ink-900: #f3f5f9;
-  --kla-primary-100: #14233f;
+  --kla-primary-100: #3d0408;
 }
 
 /* ─── Tailwind directives ───────────────────────────────────────────────── */
