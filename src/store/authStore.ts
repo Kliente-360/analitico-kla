@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { supabase } from '../lib/supabase'
+import { supabase, supabaseConfigured } from '../lib/supabase'
 
 interface User {
   email: string
@@ -21,19 +21,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
 
   init: async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      set({
-        isAuthenticated: true,
-        user: {
-          email: session.user.email ?? '',
-          name: session.user.user_metadata?.name ?? session.user.email ?? '',
-        },
-      })
-    }
-    set({ loading: false })
+    if (!supabaseConfigured) { set({ loading: false }); return }
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         set({
           isAuthenticated: true,
@@ -42,10 +33,26 @@ export const useAuthStore = create<AuthState>((set) => ({
             name: session.user.user_metadata?.name ?? session.user.email ?? '',
           },
         })
-      } else {
-        set({ isAuthenticated: false, user: null })
       }
-    })
+
+      supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          set({
+            isAuthenticated: true,
+            user: {
+              email: session.user.email ?? '',
+              name: session.user.user_metadata?.name ?? session.user.email ?? '',
+            },
+          })
+        } else {
+          set({ isAuthenticated: false, user: null })
+        }
+      })
+    } catch {
+      // Supabase unreachable — show login page
+    } finally {
+      set({ loading: false })
+    }
   },
 
   login: async (email, password) => {

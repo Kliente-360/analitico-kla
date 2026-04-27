@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useAuthStore } from '../store/authStore'
 
 vi.mock('../lib/supabase', () => ({
+  supabaseConfigured: true,
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),

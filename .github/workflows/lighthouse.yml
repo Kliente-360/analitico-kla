@@ -22,6 +22,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://eiecukdubvfakapokxje.supabase.co
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpZWN1a2R1YnZmYWthcG9reGplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTEyNTcsImV4cCI6MjA5Mjg4NzI1N30.vsmIde9_PDhPvS5Yt_g4ab_Yh7HHbbZhn90F3QElzsk
 
       - name: Lighthouse CI
         run: npx lhci autorun --config=.lighthouserc.cjs

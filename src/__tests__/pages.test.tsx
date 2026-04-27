@@ -4,6 +4,7 @@ import { vi } from 'vitest'
 vi.mock('../hooks/usePageReady', () => ({ usePageReady: () => true }))
 
 vi.mock('../lib/supabase', () => ({
+  supabaseConfigured: true,
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),

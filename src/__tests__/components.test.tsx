@@ -9,6 +9,7 @@ import { ThemeProvider, ThemeSwitcher } from '../components/ThemeProvider'
 import { EmptyState } from '../components/EmptyState'
 
 vi.mock('../lib/supabase', () => ({
+  supabaseConfigured: true,
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
