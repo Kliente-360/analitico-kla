@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import { vi } from 'vitest'
 import { useAuthStore } from '../store/authStore'
 import {
   SkeletonKpiCard, SkeletonChart, SkeletonTable,
@@ -6,6 +7,17 @@ import {
 } from '../components/Skeleton'
 import { ThemeProvider, ThemeSwitcher } from '../components/ThemeProvider'
 import { EmptyState } from '../components/EmptyState'
+
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      signInWithPassword: vi.fn().mockResolvedValue({ data: { user: null, session: null }, error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+      onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
+    },
+  },
+}))
 
 // Minimal Layout mock — avoids the full lazy-page + matchMedia setup
 vi.mock('../components/Layout', () => ({
@@ -16,7 +28,7 @@ import App from '../App'
 
 describe('App', () => {
   beforeEach(() => {
-    useAuthStore.setState({ isAuthenticated: false, user: null })
+    useAuthStore.setState({ isAuthenticated: false, user: null, loading: false })
   })
 
   it('shows LoginPage when not authenticated', () => {
@@ -28,6 +40,7 @@ describe('App', () => {
     useAuthStore.setState({
       isAuthenticated: true,
       user: { name: 'Admin', email: 'admin@test.com' },
+      loading: false,
     })
     render(<App />)
     expect(screen.getByTestId('layout')).toBeInTheDocument()
