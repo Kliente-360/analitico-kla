@@ -1,7 +1,21 @@
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 
 vi.mock('../hooks/usePageReady', () => ({ usePageReady: () => true }))
+
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      signInWithPassword: vi.fn().mockResolvedValue({
+        data: { user: null, session: null },
+        error: { message: 'Invalid login credentials' },
+      }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+      onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
+    },
+  },
+}))
 
 // Reset URL query params between tests so useUrlState doesn't leak across tests
 afterEach(() => {
@@ -402,8 +416,9 @@ describe('LoginPage', () => {
     expect((screen.getByLabelText('E-mail') as HTMLInputElement).value).toBe('demo@kliente360.com')
   })
 
-  it('shows loading state when form is submitted', () => {
-    vi.useFakeTimers()
+  it('shows loading state when form is submitted', async () => {
+    const supabaseMod = await import('../lib/supabase')
+    vi.mocked(supabaseMod.supabase.auth.signInWithPassword).mockReturnValueOnce(new Promise(() => {}))
     render(<LoginPage />)
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'admin@kliente360.com' } })
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'admin123' } })
@@ -411,22 +426,17 @@ describe('LoginPage', () => {
       fireEvent.submit(screen.getByRole('button', { name: /entrar/i }).closest('form')!)
     })
     expect(screen.getByText(/Entrando/i)).toBeInTheDocument()
-    act(() => { vi.runAllTimers() })
-    vi.useRealTimers()
   })
 
-  it('shows error on invalid credentials', () => {
-    vi.useFakeTimers()
+  it('shows error on invalid credentials', async () => {
     render(<LoginPage />)
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'wrong@example.com' } })
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'wrongpassword' } })
-    act(() => {
+    await act(async () => {
       fireEvent.submit(screen.getByRole('button', { name: /entrar/i }).closest('form')!)
     })
-    act(() => { vi.runAllTimers() })
-    expect(screen.getByRole('alert')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
     expect(screen.getByText(/inválidos/i)).toBeInTheDocument()
-    vi.useRealTimers()
   })
 
   it('renders demo credential tags', () => {

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { supabase } from '../lib/supabase'
 
 interface User {
   email: string
@@ -8,27 +9,62 @@ interface User {
 interface AuthState {
   isAuthenticated: boolean
   user: User | null
-  login: (email: string, password: string) => boolean
-  logout: () => void
+  loading: boolean
+  init: () => Promise<void>
+  login: (email: string, password: string) => Promise<string | null>
+  logout: () => Promise<void>
 }
-
-const CREDENTIALS = [
-  { email: 'admin@kliente360.com', password: 'admin123', name: 'Administrador' },
-  { email: 'demo@kliente360.com',  password: 'demo@2025', name: 'Demo Kliente 360' },
-]
 
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   user: null,
+  loading: true,
 
-  login: (email, password) => {
-    const found = CREDENTIALS.find((c) => c.email === email && c.password === password)
-    if (found) {
-      set({ isAuthenticated: true, user: { email: found.email, name: found.name } })
-      return true
+  init: async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      set({
+        isAuthenticated: true,
+        user: {
+          email: session.user.email ?? '',
+          name: session.user.user_metadata?.name ?? session.user.email ?? '',
+        },
+      })
     }
-    return false
+    set({ loading: false })
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        set({
+          isAuthenticated: true,
+          user: {
+            email: session.user.email ?? '',
+            name: session.user.user_metadata?.name ?? session.user.email ?? '',
+          },
+        })
+      } else {
+        set({ isAuthenticated: false, user: null })
+      }
+    })
   },
 
-  logout: () => set({ isAuthenticated: false, user: null }),
+  login: async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return error.message
+    if (data.user) {
+      set({
+        isAuthenticated: true,
+        user: {
+          email: data.user.email ?? '',
+          name: data.user.user_metadata?.name ?? data.user.email ?? '',
+        },
+      })
+    }
+    return null
+  },
+
+  logout: async () => {
+    await supabase.auth.signOut()
+    set({ isAuthenticated: false, user: null })
+  },
 }))
