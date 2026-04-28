@@ -27,9 +27,7 @@ export default function LoginPage() {
                       bg-primary-700 text-white p-12">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-lg leading-none">K</span>
-          </div>
+          <img src="/logo-kla.svg" alt="KLA" className="w-10 h-10 rounded-xl flex-shrink-0" />
           <div>
             <p className="font-bold text-lg leading-tight">Analítico KLA</p>
             <p className="text-white/60 text-xs leading-tight">by Kliente 360</p>
@@ -64,9 +62,7 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center bg-ink-50 p-6 sm:p-10">
         {/* Mobile logo */}
         <div className="flex lg:hidden items-center gap-2.5 mb-8">
-          <div className="w-9 h-9 bg-primary-700 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-base">K</span>
-          </div>
+          <img src="/logo-kla.svg" alt="KLA" className="w-9 h-9 rounded-xl flex-shrink-0" />
           <span className="font-bold text-ink-900 text-lg">Analítico KLA</span>
         </div>
 
