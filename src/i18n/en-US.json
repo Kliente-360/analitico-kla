@@ -6,7 +6,8 @@
     "sector":     "Business Line",
     "regional":   "By Branch / State",
     "trends":     "Trend 2026–2033",
-    "rawdata":    "Raw Data"
+    "rawdata":    "Raw Data",
+    "powerbi":    "Power BI"
   },
   "nav_short": {
     "dashboard":  "Overview",
@@ -15,7 +16,8 @@
     "sector":     "Sector",
     "regional":   "Regional",
     "trends":     "Trends",
-    "rawdata":    "Data"
+    "rawdata":    "Data",
+    "powerbi":    "Power BI"
   },
   "topbar": {
     "period":       "Period",

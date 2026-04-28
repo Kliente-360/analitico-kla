@@ -2,7 +2,7 @@ import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
 import {
-  BarChart3, Table2, FlaskConical, PieChart, MapPin, TrendingUp, Database,
+  BarChart3, Table2, FlaskConical, PieChart, MapPin, TrendingUp, Database, LayoutDashboard,
   Loader2, LogOut, ChevronLeft, ChevronRight, Download, Moon, Sun, Bell, Menu, X, Languages,
 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
@@ -21,6 +21,7 @@ const SectorPage     = lazy(() => import('../pages/SectorPage'))
 const RegionalPage   = lazy(() => import('../pages/RegionalPage'))
 const TrendPage      = lazy(() => import('../pages/TrendPage'))
 const RawDataPage    = lazy(() => import('../pages/RawDataPage'))
+const PowerBIPage    = lazy(() => import('../pages/powerbi/PowerBIPage'))
 
 const PAGES: Record<TabId, React.LazyExoticComponent<() => React.ReactElement>> = {
   dashboard: DashboardPage,
@@ -30,16 +31,18 @@ const PAGES: Record<TabId, React.LazyExoticComponent<() => React.ReactElement>> 
   regional:  RegionalPage,
   trends:    TrendPage,
   rawdata:   RawDataPage,
+  powerbi:   PowerBIPage,
 }
 
 const NAV_IDS: { id: TabId; icon: React.ReactNode; badge?: string }[] = [
-  { id: 'dashboard', icon: <BarChart3    size={16} strokeWidth={1.5} /> },
-  { id: 'pivot',     icon: <Table2       size={16} strokeWidth={1.5} /> },
-  { id: 'scenario',  icon: <FlaskConical size={16} strokeWidth={1.5} />, badge: 'novo' },
-  { id: 'sector',    icon: <PieChart     size={16} strokeWidth={1.5} /> },
-  { id: 'regional',  icon: <MapPin       size={16} strokeWidth={1.5} /> },
-  { id: 'trends',    icon: <TrendingUp   size={16} strokeWidth={1.5} /> },
-  { id: 'rawdata',   icon: <Database     size={16} strokeWidth={1.5} /> },
+  { id: 'dashboard', icon: <BarChart3       size={16} strokeWidth={1.5} /> },
+  { id: 'pivot',     icon: <Table2          size={16} strokeWidth={1.5} /> },
+  { id: 'scenario',  icon: <FlaskConical    size={16} strokeWidth={1.5} />, badge: 'novo' },
+  { id: 'sector',    icon: <PieChart        size={16} strokeWidth={1.5} /> },
+  { id: 'regional',  icon: <MapPin          size={16} strokeWidth={1.5} /> },
+  { id: 'trends',    icon: <TrendingUp      size={16} strokeWidth={1.5} /> },
+  { id: 'rawdata',   icon: <Database        size={16} strokeWidth={1.5} /> },
+  { id: 'powerbi',   icon: <LayoutDashboard size={16} strokeWidth={1.5} />, badge: 'new' },
 ]
 
 // 4 items shown in the mobile bottom tab bar

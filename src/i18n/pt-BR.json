@@ -6,7 +6,8 @@
     "sector":     "Linha de Negócio",
     "regional":   "Por Filial / UF",
     "trends":     "Tendência 2026–2033",
-    "rawdata":    "Dados Brutos"
+    "rawdata":    "Dados Brutos",
+    "powerbi":    "Power BI"
   },
   "nav_short": {
     "dashboard":  "Visão",
@@ -15,7 +16,8 @@
     "sector":     "Setor",
     "regional":   "Regional",
     "trends":     "Tendências",
-    "rawdata":    "Dados"
+    "rawdata":    "Dados",
+    "powerbi":    "Power BI"
   },
   "topbar": {
     "period":       "Período",

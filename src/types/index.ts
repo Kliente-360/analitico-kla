@@ -51,6 +51,7 @@ export type TabId =
   | 'regional'
   | 'trends'
   | 'rawdata'
+  | 'powerbi'
 
 export type DimensionKey = 'sector' | 'state' | 'region' | 'size' | 'decade' | 'city'
 
