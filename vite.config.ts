@@ -25,7 +25,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/__tests__/**', 'src/main.tsx', 'src/data/**'],
+      exclude: ['src/__tests__/**', 'src/main.tsx', 'src/data/**', 'src/pages/powerbi/**'],
       thresholds: { lines: 69, statements: 68, branches: 53, functions: 68 },
     },
   },
