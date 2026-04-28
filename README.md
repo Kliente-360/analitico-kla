@@ -1,266 +1,141 @@
-# Analitico KLA
+<div align="center">
 
-> **Inteligência tributária em tempo real para a carteira de clientes do Kliente 360.**
+<img src="public/logo-kla.svg" width="80" alt="KLA Logo" />
 
-O Analitico KLA transforma dados empresariais complexos em decisões claras. Com ele, consultores e gestores visualizam o impacto exato da Reforma Tributária sobre cada empresa da carteira — e simulam cenários alternativos em segundos, sem planilhas, sem código.
+# Analítico KLA
 
----
+### Inteligência fiscal para a Reforma Tributária brasileira.
 
-## O Problema que Resolve
+**Simule. Compare. Decida. — tudo em segundos, sem planilhas.**
 
-A Reforma Tributária brasileira (PEC 45/2019) é a maior mudança fiscal em décadas. CBS substitui PIS e COFINS. IBS substitui ICMS e ISS. A transição vai de 2026 a 2033. Para cada empresa, o impacto é diferente — depende do setor, do estado, da composição de receita.
+[![Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](#)
+[![Coverage](https://img.shields.io/badge/coverage-≥69%25-brightgreen?style=flat-square)](#)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](#)
+[![License](https://img.shields.io/badge/licença-proprietária-red?style=flat-square)](#)
 
-Gestores precisam de respostas rápidas:
-- **Minha carteira vai pagar mais ou menos imposto?**
-- **Quais setores são mais afetados?**
-- **Se a alíquota do IBS for X%, qual o impacto empresa a empresa?**
-- **O que muda se eu comparar dois cenários de reforma lado a lado?**
+[**Acessar o Portal →**](https://analitico-kla.netlify.app) &nbsp;·&nbsp; [Reportar Bug](../../issues) &nbsp;·&nbsp; [Solicitar Feature](../../issues)
 
-O Analitico KLA responde a todas essas perguntas com gráficos interativos, tabelas dinâmicas e simulações em tempo real.
-
----
-
-## Para Quem Foi Feito
-
-| Perfil | Como usa |
-|--------|----------|
-| **Consultor tributário** | Simula e compara cenários para apresentar ao cliente em reunião |
-| **Gerente de carteira** | Identifica empresas com maior exposição à reforma |
-| **Diretor financeiro** | Monitora impacto consolidado e projeta carga futura por setor |
-| **Analista** | Explora dados brutos, cria visões dinâmicas e exporta para relatórios |
+</div>
 
 ---
 
-## Especificação Funcional — Alto Nível
+## Por que o Analítico KLA?
 
-### 1. Autenticação e Acesso
+A **Reforma Tributária** (PEC 45/2019) é a maior mudança fiscal do Brasil em décadas. CBS substitui PIS + COFINS. IBS substitui ICMS + ISS. A transição vai de 2026 a 2033 — e cada empresa será impactada de forma diferente, dependendo do setor, do estado e da composição de receitas.
 
-O portal é protegido por login com e-mail e senha. O sistema suporta múltiplos perfis de usuário. Na versão atual, as credenciais são gerenciadas localmente; a arquitetura está preparada para integração com provedores de identidade externos (Supabase Auth, Auth0) sem alteração nas páginas.
+Consultores e gestores precisavam de uma ferramenta que respondesse, em tempo real:
 
-**Regras:**
-- Sessão iniciada após validação de credenciais
-- Logout encerra a sessão imediatamente
-- Todas as abas analíticas exigem autenticação ativa
+> *"Minha carteira vai pagar mais ou menos imposto?"*  
+> *"Quais clientes são mais vulneráveis à transição?"*  
+> *"Se a alíquota do IBS cair de 26% para 22%, o que muda para cada empresa?"*
 
----
-
-### 2. Dashboard Executivo
-
-Visão consolidada da carteira com os principais indicadores em uma única tela.
-
-**Indicadores (KPIs):**
-- Total de empresas e setores representados
-- Receita total da carteira (R$ M)
-- Carga tributária total — regime atual
-- Carga tributária total — pós-reforma
-- Impacto médio percentual da reforma
-
-**Gráficos:**
-- Receita total por setor (barras horizontais, ordenado por valor)
-- Composição de impostos atuais: ICMS, COFINS, IRPJ, ISS, CSLL, PIS (pizza com legenda)
-- Comparativo atual vs pós-reforma por setor (barras agrupadas)
-- Variação percentual por setor (barras com cor: verde = redução, vermelho = aumento)
-- Distribuição da carteira por porte de empresa (pizza + cards de resumo)
-
-**Exportação:** botão PDF/Imprimir disponível em todo o portal gera versão impressa limpa (controles e navegação ocultados automaticamente).
+O **Analítico KLA** responde a tudo isso — com gráficos interativos, tabelas dinâmicas e simulações side-by-side — direto no browser, sem necessidade de planilhas, código ou suporte técnico.
 
 ---
 
-### 3. Tabela Dinâmica (Pivot Table)
+## Funcionalidades
 
-Análise multidimensional configurável pelo próprio usuário, sem necessidade de suporte técnico.
+### Dashboard Executivo
+Visão consolidada da carteira em uma tela. KPIs de receita, carga tributária atual e pós-reforma, impacto médio percentual. Seis widgets arrastáveis com ordem persistida por usuário.
 
-**Dimensões disponíveis para linhas e colunas:**
-- Setor de atividade
-- Estado (UF)
-- Região (Sudeste, Sul, Nordeste, Centro-Oeste, Norte)
-- Porte (Pequena, Média, Grande)
-- Década de fundação
+### Tabela Dinâmica
+Análise multidimensional configurável: 5 dimensões (setor, UF, região, porte, década) × 16 métricas (receita, impostos, alíquotas efetivas, variações). Soma automática vs. média ponderada por tipo de métrica.
 
-**Métricas disponíveis:**
-- Receita (R$ M)
-- Funcionários
-- Impostos atuais e pós-reforma (R$ M)
-- Variação absoluta (R$) e percentual (%)
-- Alíquota efetiva atual e pós-reforma
-- Tributos individuais: IRPJ, CSLL, PIS, COFINS, ISS, ICMS, CBS, IBS
+### Simulador de Cenários
+Sliders em tempo real para CBS, IBS-Bens e IBS-Serviços. Modo comparação A/B coloca dois cenários lado a lado — com gráfico e tabela de impacto por empresa. Nenhum reload, nenhuma espera.
 
-**Regras de agregação:**
-- Métricas monetárias e de volume: **soma**
-- Métricas de taxa (alíquota efetiva, variação %): **média ponderada**
+### Análise por Setor
+Receita por setor, composição de impostos, dispersão receita × alíquota efetiva, ranking de exposição à reforma. Filtros combinados por região e porte.
 
-**Ordenação:** por total (maior → menor ou menor → maior), configurável pelo usuário.
+### Análise Regional
+Treemap de receita por estado, impostos por macrorregião, tabela detalhada por UF com variação pós-reforma.
 
-**Responsividade:** em telas menores que 768px, exibe lista ordenada simplificada (dimensão + total). Em desktop, exibe a tabela cruzada completa com totais por linha e coluna.
+### Tendências 2021–2033
+Projeção da transição real pelo calendário oficial da reforma — com marcos de 2026, 2027, 2029 e 2033 sinalizados no gráfico. Alternável entre área e linha.
 
----
+### Power BI Analítico *(novo)*
+8 sub-visões sobre dados fiscais nota a nota: carga efetiva CBS/IBS por ano, quadrante de créditos e débitos, pivot de produtos (entradas e saídas), DRE simulado, comparativo de preço e simulador fiscal com 10 variáveis ajustáveis.
 
-### 4. Simulação de Cenários
-
-Motor de simulação que recalcula o impacto tributário em tempo real conforme o usuário ajusta as alíquotas da reforma.
-
-**Variáveis controláveis:**
-| Variável | Intervalo | Representa |
-|----------|-----------|-----------|
-| CBS | 0% – 15% | Contribuição sobre Bens e Serviços (substitui PIS + COFINS) |
-| IBS — Bens | 0% – 30% | Imposto sobre Bens e Serviços para comércio e indústria (substitui ICMS) |
-| IBS — Serviços | 0% – 20% | IBS para setor de serviços (substitui ISS) |
-
-**Regras de cálculo:**
-- IRPJ e CSLL: mantidos sem alteração (não são afetados pela reforma)
-- Empresas de serviço (Tecnologia, Saúde, Financeiro, Construção, Serviços) usam alíquota IBS-Serviços
-- Demais setores usam alíquota IBS-Bens
-
-**Modo de comparação:**
-- Ativado por botão "Comparar dois cenários"
-- Exibe dois painéis de sliders independentes (Cenário A e Cenário B)
-- Resumo com 4 indicadores: Atual | Reforma Oficial | Cenário A | Cenário B
-- Gráfico com 4 barras por setor
-- Tabela de impacto por empresa com colunas Δ A e Δ B lado a lado
-
-**Filtro:** por setor de atividade (afeta apenas o cálculo consolidado; o gráfico por setor sempre mostra todos).
+### Dados Brutos
+Tabela virtualizada de alta performance com busca, filtros, 22 colunas configuráveis e exportação CSV compatível com Excel (BOM UTF-8).
 
 ---
 
-### 5. Análise por Setor
+## Stack Técnica
 
-Visão detalhada de cada setor da economia presente na carteira.
+| Camada | Tecnologia |
+|--------|-----------|
+| **UI** | React 18 + TypeScript strict + Vite 5 |
+| **Estilos** | Tailwind CSS com sistema de design customizado |
+| **Gráficos** | Recharts (Bar, Line, Area, Scatter, Composed) |
+| **Estado** | Zustand |
+| **Virtualização** | TanStack Virtual |
+| **DnD** | dnd-kit |
+| **Testes** | Vitest + Testing Library (≥ 177 testes, coverage ≥ 69%) |
+| **Build/CI** | Vite 5 + pre-push hook (lint → build → coverage) |
+| **Deploy** | Netlify (CD automático a cada push em `main`) |
 
-**Filtros:** região geográfica e porte de empresa (combinados, com contagem de empresas ativas).
-
-**Gráficos:**
-- Receita por setor (barras horizontais com cor por setor)
-- Atual vs pós-reforma por setor (barras agrupadas)
-- Composição de impostos por setor — regime atual (barras empilhadas: ICMS, COFINS, ISS, IRPJ, CSLL, PIS)
-- Dispersão receita × alíquota efetiva (scatter; tamanho do ponto proporcional ao número de funcionários)
-
-**Tabela resumo por setor:** número de empresas, alíquota efetiva atual e impacto médio da reforma (badge colorido).
-
----
-
-### 6. Análise Regional
-
-Distribuição geográfica da carteira por estado e macrorregião.
-
-**Filtros:** setor e porte.
-
-**Gráficos:**
-- Treemap de receita por estado (cor por região, tamanho proporcional à receita)
-- Impostos por região — atual vs reforma (barras agrupadas com cor por região)
-- Carga tributária por estado — regime atual (barras com cor por região)
-
-**Tabela detalhada por estado:** região, número de empresas, receita total, impostos atuais, pós-reforma e impacto médio percentual.
-
----
-
-### 7. Tendências e Projeções (2021–2033)
-
-Evolução histórica e projeção da carga tributária ao longo do período de transição para o novo regime.
-
-**Filtro:** por setor (afeta o gráfico de evolução; a tabela comparativa sempre mostra todos os setores).
-
-**Visualização:** alternável entre gráfico de área (padrão) e gráfico de linha.
-
-**Séries exibidas:**
-- Regime Atual — projeção linear com crescimento de 5% a.a. (linha tracejada)
-- Regime Reforma — projeção pós-reforma completa (linha tracejada)
-- Transição Real — caminho efetivo considerando o calendário oficial da reforma (linha sólida)
-
-**Marcos do calendário da reforma** (exibidos como cards e linhas de referência no gráfico):
-- 2026: Início da transição — CBS vigente, IBS em teste (0,1%)
-- 2027: CBS plena — extinção de PIS/COFINS, IBS a 20%
-- 2029: IBS a 50% — ICMS/ISS reduzidos à metade
-- 2033: Reforma completa — extinção total de ICMS/ISS
-
-**Tabela comparativa 2025 → 2033:** impacto percentual e barra de tendência visual por setor.
-
----
-
-### 8. Dados Brutos
-
-Acesso completo à base de empresas com capacidade de exploração e exportação.
-
-**Funcionalidades:**
-- Busca por texto (nome, setor ou estado)
-- Filtros por setor, estado e porte (combinados)
-- Colunas configuráveis pelo usuário (mostrar/ocultar individualmente)
-- Ordenação clicável em qualquer coluna (asc/desc com indicador visual)
-- Exportação para CSV com BOM UTF-8 (compatível com Excel)
-
-**Colunas disponíveis (22 no total):** Empresa, Setor, UF, Região, Porte, Fundação, Funcionários, Receita, IRPJ, CSLL, PIS, COFINS, ISS, ICMS, Total Atual, Alíq. Atual, CBS, IBS, Total Reforma, Alíq. Reforma, Δ R$, Δ%.
-
-**Rodapé com totalizadores:** receita total, impostos atuais, impostos pós-reforma e total de funcionários do conjunto filtrado.
-
----
-
-## Modelo de Dados — Conceitual
-
-### Entidade: Empresa
-
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| id | string | Identificador único |
-| name | string | Razão social |
-| sector | string | Setor de atividade (10 categorias) |
-| state | string | UF (2 letras) |
-| region | string | Macrorregião (derivado do estado) |
-| size | enum | Pequena / Média / Grande (por faixa de receita) |
-| revenue | number | Receita anual em R$ mil |
-| employees | number | Número de funcionários |
-| founded | number | Ano de fundação |
-| irpj, csll, pis, cofins, iss, icms | number | Tributos regime atual (R$ mil) |
-| totalTaxCurrent | number | Carga total atual (R$ mil) |
-| effectiveRateCurrent | number | Alíquota efetiva atual (%) |
-| cbs, ibs | number | Tributos pós-reforma (R$ mil) |
-| totalTaxReform | number | Carga total pós-reforma (R$ mil) |
-| effectiveRateReform | number | Alíquota efetiva pós-reforma (%) |
-| taxDelta | number | Variação absoluta (R$ mil) |
-| taxDeltaPercent | number | Variação percentual (%) |
-
-**Classificação por porte:** Pequena < R$ 30M · Média R$ 30M–R$ 300M · Grande > R$ 300M de receita anual.
-
----
-
-## Arquitetura Técnica
+### Arquitetura
 
 ```
 src/
-├── __tests__/          # 36 testes unitários (Vitest)
-├── components/         # ChartTooltip, ErrorBoundary, KpiCard, Layout, RangeSlider
-├── constants/          # Cores, limiares de porte, setores de serviço
-├── data/               # mockData.ts — fonte de dados atual (substituível por API)
-├── hooks/              # usePivotTable, useTableFilter
-├── pages/              # 7 abas (lazy loaded individualmente)
-├── store/              # authStore (Zustand)
-├── types/              # Company, TabId, DimensionKey, MetricKey
-└── utils/              # formatters.ts — fmtM, fmtPct, fmtNum, fmtVal
+├── __tests__/        # Testes unitários e de integração (Vitest)
+├── components/       # ChartTooltip, ErrorBoundary, KpiCard, Layout, RangeSlider
+├── constants/        # Cores, limiares de porte, setores de serviço
+├── data/
+│   ├── mockData.ts   # Fonte de dados (substituível por API sem alterar as páginas)
+│   └── powerbi/      # Star schema: fato_saidas, fato_entradas, fato_tributos + dims
+├── hooks/            # usePivotTable, useTableFilter, usePageReady
+├── pages/            # 8 abas analíticas (lazy loaded individualmente)
+│   └── powerbi/      # 8 sub-páginas Power BI
+├── store/            # authStore (Zustand)
+├── types/            # Company, TabId, DimensionKey, MetricKey
+└── utils/            # formatters.ts — fmtM, fmtPct, fmtNum, fmtVal
 ```
-
-**Stack:** React 18 + TypeScript strict · Vite 5 com code splitting · Tailwind CSS · Recharts · Zustand · Papa Parse
-
-**CI/CD:** GitHub Actions — build + typecheck + testes a cada push para `main`.
 
 ---
 
 ## Desenvolvimento Local
 
 ```bash
+# Instalar dependências
 npm install
-npm run dev       # http://localhost:5173
-npm run build     # TypeScript + build de produção
-npm test          # testes em modo watch
-npm run test:run  # testes uma vez (usado no CI)
+
+# Servidor de desenvolvimento
+npm run dev          # http://localhost:5173
+
+# Testes
+npm test             # modo watch
+npx vitest run       # execução única
+
+# Build de produção
+npm run build        # TypeScript + Vite bundle
 ```
 
 ---
 
-## Acesso
+## Roadmap
 
-| Usuário | Senha |
-|---------|-------|
-| admin@kliente360.com | admin123 |
-| demo@kliente360.com | demo@2025 |
+| Fase | Foco | Status |
+|------|------|--------|
+| **1** | Auth + Dashboard + Tabela Dinâmica | ✅ Concluído |
+| **2** | Simulador de Cenários + Análise Setorial/Regional | ✅ Concluído |
+| **3** | Tendências + Dados Brutos + Export PDF | ✅ Concluído |
+| **4A** | Power BI Analítico (8 visões fiscais nota a nota) | ✅ Concluído |
+| **4B** | IPI modelado, calibração 26–28%, veredito automático | 🔄 Em planejamento |
+| **5** | Upload CSV, dados reais via Supabase, export PDF Power BI | 📋 Backlog |
 
 ---
 
-*Desenvolvido por **Kliente 360** · Dados simulados para fins de demonstração*
+## Contexto de Domínio
+
+O Analítico KLA é desenvolvido com base em premissas técnicas de especialistas tributários. Consulte [`docs/contexto-especialista.md`](docs/contexto-especialista.md) para as regras de negócio, alíquotas de referência, calendário da transição e diretrizes dos cenários de simulação.
+
+---
+
+<div align="center">
+
+Desenvolvido por **[Kliente 360](https://kliente360.com.br)** · Dados simulados para fins de demonstração
+
+</div>
