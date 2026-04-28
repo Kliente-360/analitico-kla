@@ -405,23 +405,11 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText(/ocultar senha/i)).toBeInTheDocument()
   })
 
-  it('fills credentials on demo row click', () => {
-    render(<LoginPage />)
-    fireEvent.click(screen.getAllByText(/admin@kliente360.com/)[0])
-    expect((screen.getByLabelText('E-mail') as HTMLInputElement).value).toBe('admin@kliente360.com')
-  })
-
-  it('fills second demo credential on click', () => {
-    render(<LoginPage />)
-    fireEvent.click(screen.getAllByText(/demo@kliente360.com/)[0])
-    expect((screen.getByLabelText('E-mail') as HTMLInputElement).value).toBe('demo@kliente360.com')
-  })
-
   it('shows loading state when form is submitted', async () => {
     const supabaseMod = await import('../lib/supabase')
     vi.mocked(supabaseMod.supabase.auth.signInWithPassword).mockReturnValueOnce(new Promise(() => {}))
     render(<LoginPage />)
-    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'admin@kliente360.com' } })
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'user@example.com' } })
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'admin123' } })
     act(() => {
       fireEvent.submit(screen.getByRole('button', { name: /entrar/i }).closest('form')!)
@@ -440,8 +428,4 @@ describe('LoginPage', () => {
     expect(screen.getByText(/inválidos/i)).toBeInTheDocument()
   })
 
-  it('renders demo credential tags', () => {
-    render(<LoginPage />)
-    expect(screen.getByText('Credenciais de demonstração')).toBeInTheDocument()
-  })
 })
