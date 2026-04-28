@@ -24,3 +24,7 @@ Sempre desenvolver em `claude/analyze-project-roadmap-BCadU` salvo instrução e
 ## Stack
 
 React 18 + TypeScript + Vite + Tailwind + Zustand + Vitest + ESLint v9
+
+## Contexto de domínio
+
+Para tarefas de roadmap, análise tributária, sugestões de melhoria ou features de simulação (Reforma Tributária / IBS / CBS), consultar `docs/contexto-especialista.md` antes de propor mudanças. O documento contém as premissas, regras de negócio e diretrizes do consultor especialista que orientam o produto.
