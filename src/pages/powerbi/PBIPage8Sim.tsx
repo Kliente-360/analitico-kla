@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { RangeSlider } from '../../components/RangeSlider'
 import { DIM_ALIQUOTAS } from '../../data/powerbi/dimensions'
 
 interface SimInputs {
@@ -16,35 +17,35 @@ interface SimInputs {
 
 const TIPO_OPCOES = ['Por Dentro', 'Por Fora'] as const
 
-function SliderRow({
-  label, value, min, max, step, unit,
-  onChange,
-}: {
-  label: string
-  value: number
-  min: number
-  max: number
-  step: number
-  unit?: string
+const SLIDER_COLOR = '#1d4ed8'
+
+// Slider com preço em R$ (não %) — mesma estética do RangeSlider
+function PrecoSlider({ value, min, max, step, onChange }: {
+  value: number; min: number; max: number; step: number
   onChange: (v: number) => void
 }) {
+  const pct = max > min ? ((value - min) / (max - min)) * 100 : 0
+  const trackStyle = {
+    background: `linear-gradient(to right, ${SLIDER_COLOR} ${pct}%, var(--ink-200, #dadde2) ${pct}%)`,
+  } as React.CSSProperties
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex justify-between text-[11px]">
-        <span className="text-ink-600 font-medium">{label}</span>
-        <span className="text-primary-700 font-bold tabular-nums">
-          {value.toFixed(step < 1 ? 2 : 0)}{unit ?? ''}
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-sm font-medium text-ink-700">Preço do Serviço (R$)</label>
+        <span className="text-sm font-bold tabular-nums" style={{ color: SLIDER_COLOR }}>
+          R$ {value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       </div>
       <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
+        type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-1.5 rounded-full accent-primary-600"
+        className="w-full cursor-pointer"
+        style={trackStyle}
       />
+      <div className="flex justify-between text-xs text-ink-400 mt-1">
+        <span>R$ 0</span>
+        <span>R$ {max.toLocaleString('pt-BR')}</span>
+      </div>
     </div>
   )
 }
@@ -138,18 +139,17 @@ export default function PBIPage8Sim(): React.ReactElement {
         <div className="bg-white rounded-xl shadow-sm border border-ink-100 p-4 flex flex-col gap-4">
           <p className="text-xs font-bold text-ink-700 uppercase tracking-wide">Parâmetros</p>
 
-          <SliderRow
-            label="Preço do Serviço (R$)"
-            value={inputs.preco} min={0} max={10000} step={0.10} unit=""
+          <PrecoSlider
+            value={inputs.preco} min={0} max={10000} step={0.10}
             onChange={(v) => set('preco', v)}
           />
 
           <div className="flex flex-col gap-0.5">
-            <label className="text-[11px] text-ink-600 font-medium">Ano da Simulação</label>
+            <label className="text-sm font-medium text-ink-700">Ano da Simulação</label>
             <select
               value={inputs.ano}
               onChange={(e) => set('ano', parseInt(e.target.value))}
-              className="text-xs border border-ink-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-400"
+              className="text-xs border border-ink-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-400"
             >
               {DIM_ALIQUOTAS.filter((d) => d.ano >= 2026 || d.ano === 2024).map((d) => (
                 <option key={d.ano} value={d.ano}>{d.ano}</option>
@@ -158,21 +158,21 @@ export default function PBIPage8Sim(): React.ReactElement {
           </div>
 
           <div className="border-t border-ink-100 pt-3">
-            <p className="text-[10px] font-semibold text-ink-400 uppercase mb-2">Alíquotas de Incidência</p>
-            <div className="flex flex-col gap-3">
-              <SliderRow label="ISS (%)"     value={inputs.aliqISS}    min={0} max={10}  step={0.5} unit="%" onChange={(v) => set('aliqISS', v)} />
-              <SliderRow label="PIS (%)"     value={inputs.aliqPIS}    min={0} max={5}   step={0.1} unit="%" onChange={(v) => set('aliqPIS', v)} />
-              <SliderRow label="COFINS (%)"  value={inputs.aliqCOFINS} min={0} max={10}  step={0.5} unit="%" onChange={(v) => set('aliqCOFINS', v)} />
+            <p className="text-[10px] font-semibold text-ink-400 uppercase mb-3">Alíquotas de Incidência</p>
+            <div className="flex flex-col gap-4">
+              <RangeSlider label="ISS"    value={inputs.aliqISS}    min={0} max={10} step={0.5} onChange={(v) => set('aliqISS', v)}    color={SLIDER_COLOR} />
+              <RangeSlider label="PIS"    value={inputs.aliqPIS}    min={0} max={5}  step={0.1} onChange={(v) => set('aliqPIS', v)}    color={SLIDER_COLOR} />
+              <RangeSlider label="COFINS" value={inputs.aliqCOFINS} min={0} max={10} step={0.5} onChange={(v) => set('aliqCOFINS', v)} color={SLIDER_COLOR} />
             </div>
           </div>
 
           <div className="border-t border-ink-100 pt-3">
-            <p className="text-[10px] font-semibold text-ink-400 uppercase mb-2">Retenções</p>
-            <div className="flex flex-col gap-3">
-              <SliderRow label="Ret. ISS (%)"  value={inputs.retISS}  min={0} max={5}   step={0.5} unit="%" onChange={(v) => set('retISS', v)} />
-              <SliderRow label="CSRF (%)"       value={inputs.retCSRF} min={0} max={5}   step={0.1} unit="%" onChange={(v) => set('retCSRF', v)} />
-              <SliderRow label="IRRF (%)"       value={inputs.retIRRF} min={0} max={10}  step={0.5} unit="%" onChange={(v) => set('retIRRF', v)} />
-              <SliderRow label="INSS (%)"       value={inputs.retINSS} min={0} max={20}  step={1}   unit="%" onChange={(v) => set('retINSS', v)} />
+            <p className="text-[10px] font-semibold text-ink-400 uppercase mb-3">Retenções</p>
+            <div className="flex flex-col gap-4">
+              <RangeSlider label="Ret. ISS" value={inputs.retISS}  min={0} max={5}  step={0.5} onChange={(v) => set('retISS', v)}  color={SLIDER_COLOR} />
+              <RangeSlider label="CSRF"     value={inputs.retCSRF} min={0} max={5}  step={0.1} onChange={(v) => set('retCSRF', v)} color={SLIDER_COLOR} />
+              <RangeSlider label="IRRF"     value={inputs.retIRRF} min={0} max={10} step={0.5} onChange={(v) => set('retIRRF', v)} color={SLIDER_COLOR} />
+              <RangeSlider label="INSS"     value={inputs.retINSS} min={0} max={20} step={1}   onChange={(v) => set('retINSS', v)} color={SLIDER_COLOR} />
             </div>
           </div>
 
