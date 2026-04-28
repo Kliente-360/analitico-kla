@@ -2,11 +2,6 @@ import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 
-const DEMO_EMAILS = [
-  'admin@kliente360.com',
-  'demo@kliente360.com',
-]
-
 export default function LoginPage() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -141,27 +136,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="mt-7 pt-6 border-t border-ink-200">
-            <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-widest text-center mb-3">
-              Credenciais de demonstração
-            </p>
-            <div className="space-y-1.5">
-              {DEMO_EMAILS.map((demoEmail) => (
-                <button
-                  key={demoEmail}
-                  type="button"
-                  onClick={() => setEmail(demoEmail)}
-                  className="w-full flex items-center px-3 py-2 rounded-lg bg-paper
-                             border border-ink-200 text-xs text-ink-600 hover:border-primary-700
-                             hover:text-primary-700 transition-colors"
-                >
-                  {demoEmail}
-                </button>
-              ))}
-            </div>
-            <p className="text-[11px] text-ink-400 text-center mt-2">Clique para preencher o e-mail</p>
-          </div>
         </div>
       </div>
     </div>
