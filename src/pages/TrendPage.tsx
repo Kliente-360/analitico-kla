@@ -117,7 +117,7 @@ export default function TrendPage() {
         <div className="flex items-start justify-between mb-1">
           <div>
             <h3 className="text-sm font-semibold text-ink-900">
-              Evolução da carga tributária — {sectorFilter === 'Todos' ? 'Grupo Meridional' : sectorFilter}
+              Evolução da carga tributária — {sectorFilter === 'Todos' ? 'Grupo Kliente 360' : sectorFilter}
             </h3>
             <p className="text-xs text-ink-400 mt-0.5">
               Regime atual (projeção linear) · transição real · meta pós-reforma · R$ M

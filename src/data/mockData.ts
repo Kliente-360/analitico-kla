@@ -4,11 +4,11 @@ import { SIZE_THRESHOLDS, GROWTH_RATE } from '../constants'
 // ─── Tenant (empresa logada) ────────────────────────────────────────────────
 
 export const TENANT: Tenant = {
-  id:          'grupo-meridional',
-  name:        'Grupo Meridional S.A.',
+  id:          'grupo-kliente-360',
+  name:        'Grupo Kliente 360 S.A.',
   cnpj:        '12.345.678/0001-90',
   fiscalYear:  'Jan–Dez 2025',
-  initials:    'GM',
+  initials:    'K360',
 }
 
 // ─── Mapeamento UF → Região ──────────────────────────────────────────────────
@@ -81,7 +81,7 @@ function mkBranch(
   }
 }
 
-// ─── 13 filiais do Grupo Meridional S.A. · 6 UFs ─────────────────────────────
+// ─── 13 filiais do Grupo Kliente 360 S.A. · 6 UFs ────────────────────────────
 // Receita total: R$ 312 M · Filiais ativas: 13 · UFs: SP, RJ, MG, PR, RS, DF
 
 export const branches: Branch[] = [
