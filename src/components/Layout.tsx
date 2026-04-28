@@ -250,7 +250,7 @@ export default function Layout() {
         </nav>
         <div className="mx-2 mb-3 p-3 rounded-lg bg-primary-100 border border-primary-200">
           <p className="text-xs font-semibold text-primary-700 mb-1">Dúvidas tributárias?</p>
-          <p className="text-[11px] text-primary-600 leading-snug">Fale com um consultor Kliente 360.</p>
+          <p className="text-[11px] text-primary-600 leading-snug">Fale com um consultor KLA.</p>
         </div>
       </aside>
 
@@ -310,7 +310,7 @@ export default function Layout() {
         {!collapsed && (
           <div className="mx-2 mb-3 p-3 rounded-lg bg-primary-100 border border-primary-200">
             <p className="text-xs font-semibold text-primary-700 mb-1">Dúvidas tributárias?</p>
-            <p className="text-[11px] text-primary-600 leading-snug">Fale com um consultor Kliente 360.</p>
+            <p className="text-[11px] text-primary-600 leading-snug">Fale com um consultor KLA.</p>
           </div>
         )}
 
