@@ -209,9 +209,7 @@ export default function Layout() {
       >
         <div className="flex items-center justify-between px-4 py-4 border-b border-ink-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-primary-700 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">K</span>
-            </div>
+            <img src="/logo-kla.svg" alt="KLA" className="w-8 h-8 rounded flex-shrink-0" />
             <div>
               <p className="text-sm font-bold text-ink-900">Analítico KLA</p>
               <p className="text-[10px] text-ink-400">by Kliente 360</p>
@@ -262,9 +260,7 @@ export default function Layout() {
       `}>
         {/* Logo */}
         <div className={`flex items-center gap-2.5 px-3 py-4 border-b border-ink-100 ${collapsed ? 'justify-center' : ''}`}>
-          <div className="w-8 h-8 bg-primary-700 rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm leading-none">K</span>
-          </div>
+          <img src="/logo-kla.svg" alt="KLA" className="w-8 h-8 rounded flex-shrink-0" />
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-bold text-ink-900 leading-tight">Analítico KLA</p>
