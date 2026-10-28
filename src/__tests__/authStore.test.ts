@@ -134,3 +134,23 @@ describe('authStore — logout', () => {
     expect(useAuthStore.getState().user).toBeNull()
   })
 })
+
+describe('authStore — Supabase indisponível', () => {
+  it('não trava no loading quando getSession nunca resolve', async () => {
+    vi.useFakeTimers()
+    vi.mocked(supabase.auth.getSession).mockReturnValue(new Promise(() => {}) as never)
+    const initPromise = useAuthStore.getState().init()
+    await vi.advanceTimersByTimeAsync(3100)
+    await initPromise
+    vi.useRealTimers()
+    expect(useAuthStore.getState().loading).toBe(false)
+    expect(useAuthStore.getState().isAuthenticated).toBe(false)
+  })
+
+  it('login com credencial de demonstração funciona mesmo com Supabase pendurado', async () => {
+    vi.mocked(supabase.auth.signInWithPassword).mockReturnValue(new Promise(() => {}) as never)
+    const result = await useAuthStore.getState().login('admin@kliente360.com', 'admin123')
+    expect(result).toBeNull()
+    expect(useAuthStore.getState().isAuthenticated).toBe(true)
+  })
+})

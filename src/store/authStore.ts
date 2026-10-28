@@ -7,6 +7,18 @@ import {
   clearDemoSession,
 } from '../lib/demoAuth'
 
+/** Tempo máximo de espera pela sessão remota antes de mostrar o login. */
+const SESSION_TIMEOUT_MS = 3000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), ms),
+    ),
+  ])
+}
+
 interface User {
   email: string
   name: string
@@ -37,7 +49,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (!supabaseConfigured) { set({ loading: false }); return }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      // Supabase fora do ar trava o getSession por dezenas de segundos e deixa
+      // a tela no spinner — limitamos a espera e caímos na tela de login.
+      const { data: { session } } = await withTimeout(
+        supabase.auth.getSession(),
+        SESSION_TIMEOUT_MS,
+      )
       if (session?.user) {
         set({
           isAuthenticated: true,
@@ -83,7 +100,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        SESSION_TIMEOUT_MS,
+      )
       if (error) return error.message
       if (data.user) {
         set({
@@ -105,7 +125,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isAuthenticated: false, user: null })
     if (!supabaseConfigured) return
     try {
-      await supabase.auth.signOut()
+      await withTimeout(supabase.auth.signOut(), SESSION_TIMEOUT_MS)
     } catch {
       // sem sessão remota para encerrar
     }
